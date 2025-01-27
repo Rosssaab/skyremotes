@@ -1,0 +1,157 @@
+.hero-section {
+    background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9));
+    padding: 100px 0;
+}
+
+.hero-section img {
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.hero-section img:hover {
+    transform: translateY(-5px);
+}
+
+.card {
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.features-section img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Water Types Section */
+.water-types .card {
+    transition: all 0.3s ease;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.water-types .card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+}
+
+.water-types .card-img-top {
+    height: 200px;
+    object-fit: cover;
+}
+
+/* Machine Showcase */
+.machine-showcase {
+    background-color: #f8f9fa;
+}
+
+.machine-showcase img {
+    border-radius: 15px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.features .d-flex {
+    padding: 15px;
+    background: white;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    transition: transform 0.3s ease;
+}
+
+.features .d-flex:hover {
+    transform: translateX(10px);
+}
+
+/* General Styles */
+.btn-primary {
+    background-color: #0066cc;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 30px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #0052a3;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,102,204,0.3);
+}
+
+.benefit-item img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.introduction img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Hover effects */
+.benefit-item img:hover,
+.introduction img:hover {
+    transform: scale(1.02);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* Target all content images across the site */
+.img-fluid {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Hover effect for content images */
+.img-fluid:hover {
+    transform: scale(1.02);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* Exclude icons from the hover effect */
+.fas,
+.far,
+.fab,
+img[width="40"] {
+    transition: none;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Keep the fixed height for benefits page images */
+.benefit-item img,
+.introduction img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    object-position: center;
+}
+
+.image-container {
+    overflow: hidden;  /* Contains the hover effect */
+    margin-bottom: 1.5rem;
+}
+
+.image-container img {
+    display: block;  /* Removes any extra space below image */
+    width: 100%;
+    height: auto;
+}
+
+/* Add your custom styles here */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
