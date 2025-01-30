@@ -6,85 +6,70 @@
 <div class="container mt-4">
     <h1 class="mb-4">Shopping Cart</h1>
     
-    <div id="cart-empty" class="alert alert-info d-none">
-        Your cart is empty. <a href="{{ url_for('buy') }}">Continue shopping</a>
-    </div>
-    
-    <div id="cart-content" class="d-none">
+    <div id="cart-content">
         <div class="row">
-            <div class="col-md-4 mb-4">
-                <div class="alert alert-info">
-                    <h5 class="mb-2">Bulk Order Discounts!</h5>
-                    <p class="mb-0">Adjust the quantity to apply discounts automatically:</p>
-                    <ul class="mb-0">
-                        <li>2 remotes - 10% off</li>
-                        <li>3 remotes - 15% off</li>
-                        <li>4+ remotes - 20% off</li>
-                    </ul>
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Price</th>
+                                    <th>Quantity</th>
+                                    <th>Total</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Sky Remote Control</td>
+                                    <td>£29.95</td>
+                                    <td>
+                                        <input type="number" class="form-control quantity-input" value="1" min="1" style="width: 70px;">
+                                    </td>
+                                    <td class="row-total">£29.95</td>
+                                    <td>
+                                        <button class="btn btn-danger btn-sm remove-item">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-            
-            <div class="col-md-8">
-                <div class="table-responsive mb-4">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th>Price</th>
-                                <th>Quantity</th>
-                                <th>Total</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="cart-items">
-                            <tr>
-                                <td>Sky Remote Control</td>
-                                <td>£<span class="unit-price">29.95</span></td>
-                                <td>
-                                    <input type="number" class="form-control quantity-input" value="1" min="1" style="width: 70px">
-                                </td>
-                                <td>£<span class="row-total">29.95</span></td>
-                                <td>
-                                    <button class="btn btn-danger btn-sm remove-item" onclick="removeFromCart()">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-6 offset-md-6">
-                        <div class="card">
-                            <div class="card-body">
-                                <h3>Order Summary</h3>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span>Subtotal:</span>
-                                    <span id="subtotal">£0.00</span>
-                                </div>
-                                <div id="discount-row" class="d-flex justify-content-between mb-2 text-success d-none">
-                                    <span id="discount-text"></span>
-                                    <span id="discount-amount"></span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-3">
-                                    <span>Shipping:</span>
-                                    <span>FREE</span>
-                                </div>
-                                <hr>
-                                <div class="d-flex justify-content-between mb-3">
-                                    <strong>Total:</strong>
-                                    <strong id="total">£0.00</strong>
-                                </div>
-                                <button class="btn btn-primary btn-lg w-100" onclick="proceedToCheckout()">
-                                    Proceed to Checkout
-                                </button>
-                            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Order Summary</h3>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal:</span>
+                            <span id="subtotal">£29.95</span>
                         </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Shipping:</span>
+                            <span>FREE</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-3">
+                            <strong>Total:</strong>
+                            <strong id="total">£29.95</strong>
+                        </div>
+                        <a href="{{ url_for('checkout') }}" class="btn btn-primary btn-lg w-100">
+                            Proceed to Checkout
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+
+    <div id="cart-empty" class="text-center d-none">
+        <p class="lead">Your cart is empty</p>
+        <a href="{{ url_for('buy') }}" class="btn btn-primary">Shop Now</a>
     </div>
 </div>
 
@@ -107,47 +92,20 @@ function updateCart() {
     
     const quantity = cart.items[0].quantity;
     const unitPrice = 29.95;
-    const subtotal = quantity * unitPrice;
+    const total = quantity * unitPrice;
     
-    // Update quantity input and row total (should match subtotal)
+    // Update quantity input and row total
     const quantityInput = document.querySelector('.quantity-input');
     const rowTotalSpan = document.querySelector('.row-total');
     if (quantityInput) quantityInput.value = quantity;
-    if (rowTotalSpan) rowTotalSpan.textContent = subtotal.toFixed(2);
+    if (rowTotalSpan) rowTotalSpan.textContent = `£${total.toFixed(2)}`;
     
     // Update cart count
     cartCount.textContent = quantity;
     
-    // Calculate discount
-    let discount = 0;
-    let discountText = '';
-    if (quantity >= 4) {
-        discount = 0.20;
-        discountText = '20% bulk discount applied!';
-    } else if (quantity >= 3) {
-        discount = 0.15;
-        discountText = '15% bulk discount applied!';
-    } else if (quantity >= 2) {
-        discount = 0.10;
-        discountText = '10% bulk discount applied!';
-    }
-    
-    const discountAmount = subtotal * discount;
-    const total = subtotal - discountAmount;
-    
     // Update order summary
-    document.getElementById('subtotal').textContent = `£${subtotal.toFixed(2)}`;
+    document.getElementById('subtotal').textContent = `£${total.toFixed(2)}`;
     document.getElementById('total').textContent = `£${total.toFixed(2)}`;
-    
-    // Show/hide discount
-    const discountRow = document.getElementById('discount-row');
-    if (discount > 0) {
-        discountRow.classList.remove('d-none');
-        document.getElementById('discount-text').textContent = discountText;
-        document.getElementById('discount-amount').textContent = `-£${discountAmount.toFixed(2)}`;
-    } else {
-        discountRow.classList.add('d-none');
-    }
 }
 
 function removeFromCart() {

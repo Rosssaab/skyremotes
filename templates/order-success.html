@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Order Successful{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="card">
+                <div class="card-body">
+                    <i class="fas fa-check-circle text-success mb-4" style="font-size: 4rem;"></i>
+                    
+                    <h1 class="h3 mb-4">Thank You for Your Order!</h1>
+                    
+                    <p class="lead mb-4">
+                        Your order has been successfully processed and will be shipped shortly.
+                    </p>
+
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-envelope me-2"></i>
+                        A confirmation email has been sent to your email address.
+                    </div>
+
+                    <div class="mb-4">
+                        <h4 class="h5 mb-3">What happens next?</h4>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-box text-primary me-2"></i>
+                                We'll pack your order
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-shipping-fast text-primary me-2"></i>
+                                Orders before 1PM ship same day
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-truck text-primary me-2"></i>
+                                Free UK delivery
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="{{ url_for('home') }}" class="btn btn-primary">
+                            <i class="fas fa-home me-2"></i>Return to Homepage
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

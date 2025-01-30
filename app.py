@@ -1,10 +1,14 @@
-from flask import Flask, render_template, flash, redirect, url_for
+from flask import Flask, render_template, flash, redirect, url_for, jsonify, request, session
 from flask_mail import Mail, Message
 from forms import ContactForm
 from config import Config
 import smtplib
 import jinja2
 import logging
+import os
+import paypalrestsdk
+from datetime import datetime, timedelta
+import uuid
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -13,6 +17,13 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config.from_object(Config)
 mail = Mail(app)
+
+# PayPal configuration
+paypalrestsdk.configure({
+    "mode": app.config['PAYPAL_MODE'],
+    "client_id": app.config['PAYPAL_CLIENT_ID'],
+    "client_secret": app.config['PAYPAL_CLIENT_SECRET']
+})
 
 # Add the nl2br filter
 @app.template_filter('nl2br')
@@ -133,9 +144,87 @@ def buy():
 def cart():
     return render_template('cart.html')
 
+@app.route('/checkout')
+def checkout():
+    return render_template('checkout.html')
+
 @app.route('/help')
 def help():
     return render_template('help.html')
+
+@app.route('/process-order', methods=['POST'])
+def process_order():
+    data = request.json
+    
+    # Generate order ID
+    order_id = str(uuid.uuid4())[:8].upper()
+    
+    # Calculate estimated delivery (next business day if ordered before 1PM)
+    now = datetime.now()
+    if now.hour < 13:  # Before 1PM
+        estimated_delivery = (now + timedelta(days=1)).strftime('%A, %B %d')
+    else:
+        estimated_delivery = (now + timedelta(days=2)).strftime('%A, %B %d')
+
+    # Create order object
+    order = {
+        'id': order_id,
+        'date': now.strftime('%Y-%m-%d %H:%M:%S'),
+        'shipping': data['shippingDetails'],
+        'paypal_order_id': data['orderID'],
+        'quantity': data['quantity'],
+        'total': data['total'],
+        'estimated_delivery': estimated_delivery
+    }
+
+    # Send confirmation email
+    try:
+        send_order_confirmation(order)
+    except Exception as e:
+        app.logger.error(f"Failed to send confirmation email: {str(e)}")
+
+    # Store order in session for success page
+    session['last_order'] = order
+
+    return jsonify({
+        "status": "success",
+        "message": "Order processed successfully",
+        "order_id": order_id
+    })
+
+@app.route('/order-success')
+def order_success():
+    order = session.get('last_order')
+    if not order:
+        return redirect(url_for('home'))
+    
+    # Clear the order from session after displaying
+    session.pop('last_order', None)
+    
+    return render_template('order-success.html', order=order)
+
+def send_order_confirmation(order):
+    try:
+        msg = Message(
+            subject=f"Order Confirmation - Sky Remotes #{order['id']}",
+            recipients=[order['shipping']['email']]
+        )
+        
+        msg.html = render_template(
+            'emails/order_confirmation.html',
+            order=order
+        )
+        
+        print(f"Attempting to send email to {order['shipping']['email']}")  # Debug log
+        mail.send(msg)
+        print("Email sent successfully")  # Debug log
+        
+    except Exception as e:
+        print(f"Email error: {str(e)}")  # Debug log
+        # Log the full error details
+        import traceback
+        print(traceback.format_exc())
+        raise  # Re-raise the exception to see it in the Flask logs
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8091, debug=True) 
