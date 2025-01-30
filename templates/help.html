@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Help & FAQ{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Help & FAQ</h1>
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Remote Setup Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h4 mb-0"><i class="fas fa-cog"></i> Setting Up Your Sky Remote</h2>
+                </div>
+                <div class="card-body">
+                    <h3 class="h5">Initial Setup</h3>
+                    <ol>
+                        <li>Insert the batteries (provided) into your remote</li>
+                        <li>Ensure your Sky box is plugged in and turned on</li>
+                        <li>Point the remote at your Sky box</li>
+                        <li>Press any button to begin using</li>
+                    </ol>
+
+                    <h3 class="h5">TV Control Setup</h3>
+                    <p>To control your TV's power and volume:</p>
+                    <ol>
+                        <li>Press and hold the <strong>TV</strong> button until the light flashes twice</li>
+                        <li>Enter your TV's brand code (see manual)</li>
+                        <li>Point remote at TV and press <strong>Power</strong></li>
+                        <li>If TV responds, press <strong>Select</strong> to save</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Troubleshooting Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h4 mb-0"><i class="fas fa-wrench"></i> Troubleshooting</h2>
+                </div>
+                <div class="card-body">
+                    <h3 class="h5">Common Issues</h3>
+                    
+                    <div class="accordion" id="troubleshootingAccordion">
+                        <div class="accordion-item">
+                            <h4 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#issue1">
+                                    Remote Not Working
+                                </button>
+                            </h4>
+                            <div id="issue1" class="accordion-collapse collapse" data-bs-parent="#troubleshootingAccordion">
+                                <div class="accordion-body">
+                                    <ol>
+                                        <li>Check batteries are inserted correctly</li>
+                                        <li>Try new batteries</li>
+                                        <li>Ensure nothing is blocking the signal</li>
+                                        <li>Reset remote by removing batteries for 1 minute</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h4 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#issue2">
+                                    TV Control Not Working
+                                </button>
+                            </h4>
+                            <div id="issue2" class="accordion-collapse collapse" data-bs-parent="#troubleshootingAccordion">
+                                <div class="accordion-body">
+                                    <ol>
+                                        <li>Repeat TV setup process</li>
+                                        <li>Try alternative brand codes</li>
+                                        <li>Ensure you're pointing at the TV for volume/power</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compatibility Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h4 mb-0"><i class="fas fa-check-circle"></i> Compatibility</h2>
+                </div>
+                <div class="card-body">
+                    <p>Our Sky remote is compatible with:</p>
+                    <ul>
+                        <li>Sky+ HD boxes</li>
+                        <li>Sky Q boxes</li>
+                        <li>Most major TV brands including:
+                            <ul>
+                                <li>Samsung</li>
+                                <li>LG</li>
+                                <li>Sony</li>
+                                <li>Panasonic</li>
+                                <li>And many more (full list in manual)</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Side Panel -->
+        <div class="col-md-4">
+            <!-- Quick Links -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h5 mb-0"><i class="fas fa-link"></i> Quick Links</h2>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><a href="{{ url_for('contact') }}" class="text-decoration-none">
+                            <i class="fas fa-envelope me-2"></i>Contact Support
+                        </a></li>
+                        <li class="mb-2"><a href="{{ url_for('buy') }}" class="text-decoration-none">
+                            <i class="fas fa-shopping-cart me-2"></i>Order New Remote
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Support Hours -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h5 mb-0"><i class="fas fa-clock"></i> Support Hours</h2>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">Email Support:</p>
+                    <p class="mb-0">Response within 24 hours</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Enable Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+</script>
+{% endblock %}
+{% endblock %} 

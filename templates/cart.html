@@ -105,15 +105,18 @@ function updateCart() {
     const cartContent = document.getElementById('cart-content');
     const cartEmpty = document.getElementById('cart-empty');
     const cartItems = document.getElementById('cart-items');
+    const cartCount = document.getElementById('cart-count');
     
     if (cart.items.length === 0) {
         cartContent.classList.add('d-none');
         cartEmpty.classList.remove('d-none');
+        cartCount.textContent = '0';
         return;
     }
     
     cartContent.classList.remove('d-none');
     cartEmpty.classList.add('d-none');
+    cartCount.textContent = cart.items[0].quantity;
     
     const item = cart.items[0];
     const subtotal = parseFloat((item.price * item.quantity).toFixed(2));

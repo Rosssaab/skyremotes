@@ -133,5 +133,9 @@ def buy():
 def cart():
     return render_template('cart.html')
 
+@app.route('/help')
+def help():
+    return render_template('help.html')
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8091, debug=True) 

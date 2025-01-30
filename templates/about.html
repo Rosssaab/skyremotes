@@ -5,14 +5,99 @@
 {% block content %}
 <div class="container mt-4">
     <div class="text-center mb-5">
-        <h1 class="display-4">Welcome to Sky Remotes/h1>
-        <h2 class="text-primary">100% Genuine Sky Remote Controls</h2>
+        <h1 class="display-4">About Sky Remotes</h1>
+        <p class="lead text-primary">Your Trusted Source for Genuine Sky Remote Controls</p>
     </div>
-    <div class="row">
-        <div class="col-12">
-            <h3>About Us</h3>
-            <p>We are your trusted source for Sky remote controls in the UK.</p>
+
+    <div class="row align-items-center mb-5">
+        <div class="col-md-6">
+            <img src="{{ url_for('static', filename='images/SkyRemote.png') }}" 
+                 alt="Sky EC201 Remote Control" 
+                 class="img-fluid rounded shadow-sm mb-4">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> 
+                Please verify this matches your existing remote before ordering. We supply the EC201 model only.
+            </div>
         </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h4 mb-4"><i class="fas fa-check-circle text-success"></i> Why Choose Us?</h2>
+                    <ul class="list-unstyled">
+                        <li class="mb-3">
+                            <i class="fas fa-check text-success"></i> 100% Genuine Sky EC201 Remotes
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-battery-full text-success"></i> Duracell Batteries Included
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-shipping-fast text-success"></i> Same Day Dispatch (Orders before 1:00 PM)
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-undo text-success"></i> 30-Day Returns Policy
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-headset text-success"></i> Customer Support Available
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-map-marker-alt text-success"></i> UK Based Company
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-shield-alt text-success"></i> PayPal Buyer Protection
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="h5 mb-0"><i class="fas fa-truck"></i> Shipping Information</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="fas fa-check-circle text-success"></i> UK Mainland Delivery Only</li>
+                        <li class="mb-2"><i class="fas fa-clock text-success"></i> Orders before 1:00 PM - Same Day Dispatch</li>
+                        <li class="mb-2"><i class="fas fa-box text-success"></i> Secure Packaging</li>
+                        <li><i class="fas fa-pound-sign text-success"></i> Free Shipping</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="h5 mb-0"><i class="fas fa-shield-alt"></i> Our Guarantees</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="fas fa-check-circle text-success"></i> Brand New Genuine Sky Products</li>
+                        <li class="mb-2"><i class="fas fa-undo text-success"></i> 30-Day Return Policy</li>
+                        <li class="mb-2"><i class="fas fa-lock text-success"></i> PayPal Secure Payments</li>
+                        <li><i class="fas fa-star text-success"></i> Full Warranty Support</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-warning mt-4">
+        <h4 class="h5"><i class="fas fa-exclamation-triangle"></i> Important Note:</h4>
+        <p class="mb-0">We only supply the Sky EC201 remote control model. Please ensure this is compatible with your Sky box by checking your existing remote or documentation before ordering.</p>
+    </div>
+
+    <div class="text-center mt-5">
+        <a href="{{ url_for('buy') }}" class="btn btn-primary btn-lg">
+            <i class="fas fa-shopping-cart"></i> Order Your Remote
+        </a>
+        <a href="{{ url_for('help') }}" class="btn btn-outline-primary btn-lg ms-3">
+            <i class="fas fa-question-circle"></i> Need Help?
+        </a>
     </div>
 </div>
 {% endblock %} 
