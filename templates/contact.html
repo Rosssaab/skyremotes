@@ -95,29 +95,30 @@
 </div>
 
 <script>
+"use strict";
+
 function showSpinner() {
     if (document.getElementById('contactForm').checkValidity()) {
-        let loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+        const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
         loadingModal.show();
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    {% with messages = get_flashed_messages() %}
-    {% if messages %}
-        let loadingModal = bootstrap.Modal.getInstance(document.getElementById('loadingModal'));
+document.addEventListener('DOMContentLoaded', () => {
+    const messages = {{ get_flashed_messages()|tojson|safe }};
+    if (messages && messages.length > 0) {
+        const loadingModal = bootstrap.Modal.getInstance(document.getElementById('loadingModal'));
         if (loadingModal) {
             loadingModal.hide();
         }
         
-        let successModal = new bootstrap.Modal(document.getElementById('successModal'));
+        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
         successModal.show();
         
         setTimeout(() => {
             successModal.hide();
         }, 5000);
-    {% endif %}
-    {% endwith %}
+    }
 });
 </script>
-{% endblock %} 
+{% endblock %}

@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Shopping Cart{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Shopping Cart</h1>
+    
+    <div id="cart-empty" class="alert alert-info d-none">
+        Your cart is empty. <a href="{{ url_for('buy') }}">Continue shopping</a>
+    </div>
+    
+    <div id="cart-content" class="d-none">
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="alert alert-info">
+                    <h5 class="mb-2">Bulk Order Discounts!</h5>
+                    <p class="mb-0">Adjust the quantity to apply discounts automatically:</p>
+                    <ul class="mb-0">
+                        <li>2 remotes - 10% off</li>
+                        <li>3 remotes - 15% off</li>
+                        <li>4+ remotes - 20% off</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="col-md-8">
+                <div class="table-responsive mb-4">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th>Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cart-items">
+                            <!-- Items will be inserted here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 offset-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h3>Order Summary</h3>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Subtotal:</span>
+                                    <span id="cart-subtotal">£0.00</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-3">
+                                    <span>Shipping:</span>
+                                    <span>FREE</span>
+                                </div>
+                                <hr>
+                                <div class="d-flex justify-content-between mb-3">
+                                    <strong>Total:</strong>
+                                    <strong id="cart-total">£0.00</strong>
+                                </div>
+                                <button class="btn btn-primary btn-lg w-100" onclick="proceedToCheckout()">
+                                    Proceed to Checkout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    updateCart();
+});
+
+function calculateDiscount(quantity, subtotal) {
+    let discountPercent = 0;
+    let discountMessage = '';
+    
+    if (quantity >= 4) {
+        discountPercent = 20;
+        discountMessage = '20% bulk discount applied!';
+    } else if (quantity >= 3) {
+        discountPercent = 15;
+        discountMessage = '15% bulk discount applied!';
+    } else if (quantity >= 2) {
+        discountPercent = 10;
+        discountMessage = '10% bulk discount applied!';
+    }
+    
+    const discountAmount = ((subtotal * discountPercent) / 100).toFixed(2);
+    return {
+        percent: discountPercent,
+        amount: discountAmount,
+        message: discountMessage
+    };
+}
+
+function updateCart() {
+    const cart = JSON.parse(localStorage.getItem('cart')) || { items: [], total: 0 };
+    const cartContent = document.getElementById('cart-content');
+    const cartEmpty = document.getElementById('cart-empty');
+    const cartItems = document.getElementById('cart-items');
+    
+    if (cart.items.length === 0) {
+        cartContent.classList.add('d-none');
+        cartEmpty.classList.remove('d-none');
+        return;
+    }
+    
+    cartContent.classList.remove('d-none');
+    cartEmpty.classList.add('d-none');
+    
+    const item = cart.items[0];
+    const subtotal = parseFloat((item.price * item.quantity).toFixed(2));
+    const discount = calculateDiscount(item.quantity, subtotal);
+    const total = (subtotal - parseFloat(discount.amount)).toFixed(2);
+    
+    // Update items
+    cartItems.innerHTML = `
+        <tr>
+            <td>Sky Remote Control</td>
+            <td>£${item.price.toFixed(2)}</td>
+            <td>
+                <div class="input-group" style="width: 120px">
+                    <button class="btn btn-outline-secondary" type="button" onclick="updateQuantity(${item.quantity - 1})">-</button>
+                    <input type="number" class="form-control text-center" value="${item.quantity}" 
+                           min="1" max="10" onchange="updateQuantity(this.value)">
+                    <button class="btn btn-outline-secondary" type="button" onclick="updateQuantity(${item.quantity + 1})">+</button>
+                </div>
+            </td>
+            <td>£${subtotal.toFixed(2)}</td>
+            <td>
+                <button onclick="removeFromCart()" class="btn btn-sm btn-danger">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `;
+    
+    // Update order summary
+    const summaryHTML = `
+        <h3>Order Summary</h3>
+        <div class="d-flex justify-content-between mb-2">
+            <span>Subtotal:</span>
+            <span>£${subtotal.toFixed(2)}</span>
+        </div>
+        ${discount.percent > 0 ? `
+        <div class="d-flex justify-content-between mb-2 text-success">
+            <span>${discount.message}</span>
+            <span>-£${discount.amount}</span>
+        </div>
+        ` : ''}
+        <div class="d-flex justify-content-between mb-2">
+            <span>Shipping:</span>
+            <span>FREE</span>
+        </div>
+        <hr>
+        <div class="d-flex justify-content-between mb-3">
+            <strong>Total:</strong>
+            <strong>£${total}</strong>
+        </div>
+        <button class="btn btn-primary btn-lg w-100" onclick="proceedToCheckout()">
+            Proceed to Checkout
+        </button>
+    `;
+    
+    document.querySelector('.card-body').innerHTML = summaryHTML;
+    
+    // Save total to cart
+    cart.total = total;
+    localStorage.setItem('cart', JSON.stringify(cart));
+}
+
+function removeFromCart() {
+    localStorage.removeItem('cart');
+    document.getElementById('cart-count').textContent = '0';
+    updateCart();
+}
+
+function proceedToCheckout() {
+    alert('Checkout functionality coming soon!');
+}
+
+function updateQuantity(newQuantity) {
+    newQuantity = Math.max(1, Math.min(10, parseInt(newQuantity) || 1));
+    
+    let cart = JSON.parse(localStorage.getItem('cart')) || { items: [], total: 0 };
+    if (cart.items.length > 0) {
+        cart.items[0].quantity = newQuantity;
+        
+        // Save updated cart
+        localStorage.setItem('cart', JSON.stringify(cart));
+        
+        // Update display
+        document.getElementById('cart-count').textContent = newQuantity;
+        updateCart();
+    }
+}
+</script>
+{% endblock %} 

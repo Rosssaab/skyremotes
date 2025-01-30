@@ -155,3 +155,14 @@ body {
 main {
     flex: 1;
 }
+
+/* Add these styles for the banner */
+.banner {
+    background: linear-gradient(135deg, #0072c6 0%, #004f8c 100%) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.banner h1 {
+    font-weight: 300;
+    letter-spacing: -0.5px;
+}

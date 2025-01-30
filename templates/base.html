@@ -35,13 +35,15 @@
     </style>
 </head>
 <body>
+    <!-- Add this banner section before the navbar -->
+    <div class="banner bg-primary text-white py-4 mb-3">
+        <div class="container">
+            <h1 class="display-4 text-center mb-0" style="font-family: 'Sky Text', Arial, sans-serif;">Sky Remotes</h1>
+        </div>
+    </div>
+
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container">
-            <a class="navbar-brand sky-brand" href="{{ url_for('home') }}">
-                <img src="{{ url_for('static', filename='images/skylogo.png') }}" 
-                     alt="Sky Logo">
-                <span>Sky Remotes</span>
-            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -51,10 +53,19 @@
                         <a class="nav-link" href="{{ url_for('home') }}">Home</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('buy') }}">Buy</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('about') }}">About</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('contact') }}">Contact</a>
+                    </li>
+                    <li class="nav-item ms-lg-auto">
+                        <a class="nav-link" href="{{ url_for('cart') }}">
+                            <i class="fas fa-shopping-cart"></i> Cart
+                            <span class="badge bg-primary" id="cart-count">0</span>
+                        </a>
                     </li>
                 </ul>
             </div>
