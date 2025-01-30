@@ -37,7 +37,19 @@
                             </tr>
                         </thead>
                         <tbody id="cart-items">
-                            <!-- Items will be inserted here by JavaScript -->
+                            <tr>
+                                <td>Sky Remote Control</td>
+                                <td>£<span class="unit-price">29.95</span></td>
+                                <td>
+                                    <input type="number" class="form-control quantity-input" value="1" min="1" style="width: 70px">
+                                </td>
+                                <td>£<span class="row-total">29.95</span></td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm remove-item" onclick="removeFromCart()">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -49,7 +61,11 @@
                                 <h3>Order Summary</h3>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span>Subtotal:</span>
-                                    <span id="cart-subtotal">£0.00</span>
+                                    <span id="subtotal">£0.00</span>
+                                </div>
+                                <div id="discount-row" class="d-flex justify-content-between mb-2 text-success d-none">
+                                    <span id="discount-text"></span>
+                                    <span id="discount-amount"></span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-3">
                                     <span>Shipping:</span>
@@ -58,7 +74,7 @@
                                 <hr>
                                 <div class="d-flex justify-content-between mb-3">
                                     <strong>Total:</strong>
-                                    <strong id="cart-total">£0.00</strong>
+                                    <strong id="total">£0.00</strong>
                                 </div>
                                 <button class="btn btn-primary btn-lg w-100" onclick="proceedToCheckout()">
                                     Proceed to Checkout
@@ -73,38 +89,10 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    updateCart();
-});
-
-function calculateDiscount(quantity, subtotal) {
-    let discountPercent = 0;
-    let discountMessage = '';
-    
-    if (quantity >= 4) {
-        discountPercent = 20;
-        discountMessage = '20% bulk discount applied!';
-    } else if (quantity >= 3) {
-        discountPercent = 15;
-        discountMessage = '15% bulk discount applied!';
-    } else if (quantity >= 2) {
-        discountPercent = 10;
-        discountMessage = '10% bulk discount applied!';
-    }
-    
-    const discountAmount = ((subtotal * discountPercent) / 100).toFixed(2);
-    return {
-        percent: discountPercent,
-        amount: discountAmount,
-        message: discountMessage
-    };
-}
-
 function updateCart() {
     const cart = JSON.parse(localStorage.getItem('cart')) || { items: [], total: 0 };
     const cartContent = document.getElementById('cart-content');
     const cartEmpty = document.getElementById('cart-empty');
-    const cartItems = document.getElementById('cart-items');
     const cartCount = document.getElementById('cart-count');
     
     if (cart.items.length === 0) {
@@ -116,72 +104,54 @@ function updateCart() {
     
     cartContent.classList.remove('d-none');
     cartEmpty.classList.add('d-none');
-    cartCount.textContent = cart.items[0].quantity;
     
-    const item = cart.items[0];
-    const subtotal = parseFloat((item.price * item.quantity).toFixed(2));
-    const discount = calculateDiscount(item.quantity, subtotal);
-    const total = (subtotal - parseFloat(discount.amount)).toFixed(2);
+    const quantity = cart.items[0].quantity;
+    const unitPrice = 29.95;
+    const subtotal = quantity * unitPrice;
     
-    // Update items
-    cartItems.innerHTML = `
-        <tr>
-            <td>Sky Remote Control</td>
-            <td>£${item.price.toFixed(2)}</td>
-            <td>
-                <div class="input-group" style="width: 120px">
-                    <button class="btn btn-outline-secondary" type="button" onclick="updateQuantity(${item.quantity - 1})">-</button>
-                    <input type="number" class="form-control text-center" value="${item.quantity}" 
-                           min="1" max="10" onchange="updateQuantity(this.value)">
-                    <button class="btn btn-outline-secondary" type="button" onclick="updateQuantity(${item.quantity + 1})">+</button>
-                </div>
-            </td>
-            <td>£${subtotal.toFixed(2)}</td>
-            <td>
-                <button onclick="removeFromCart()" class="btn btn-sm btn-danger">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        </tr>
-    `;
+    // Update quantity input and row total (should match subtotal)
+    const quantityInput = document.querySelector('.quantity-input');
+    const rowTotalSpan = document.querySelector('.row-total');
+    if (quantityInput) quantityInput.value = quantity;
+    if (rowTotalSpan) rowTotalSpan.textContent = subtotal.toFixed(2);
+    
+    // Update cart count
+    cartCount.textContent = quantity;
+    
+    // Calculate discount
+    let discount = 0;
+    let discountText = '';
+    if (quantity >= 4) {
+        discount = 0.20;
+        discountText = '20% bulk discount applied!';
+    } else if (quantity >= 3) {
+        discount = 0.15;
+        discountText = '15% bulk discount applied!';
+    } else if (quantity >= 2) {
+        discount = 0.10;
+        discountText = '10% bulk discount applied!';
+    }
+    
+    const discountAmount = subtotal * discount;
+    const total = subtotal - discountAmount;
     
     // Update order summary
-    const summaryHTML = `
-        <h3>Order Summary</h3>
-        <div class="d-flex justify-content-between mb-2">
-            <span>Subtotal:</span>
-            <span>£${subtotal.toFixed(2)}</span>
-        </div>
-        ${discount.percent > 0 ? `
-        <div class="d-flex justify-content-between mb-2 text-success">
-            <span>${discount.message}</span>
-            <span>-£${discount.amount}</span>
-        </div>
-        ` : ''}
-        <div class="d-flex justify-content-between mb-2">
-            <span>Shipping:</span>
-            <span>FREE</span>
-        </div>
-        <hr>
-        <div class="d-flex justify-content-between mb-3">
-            <strong>Total:</strong>
-            <strong>£${total}</strong>
-        </div>
-        <button class="btn btn-primary btn-lg w-100" onclick="proceedToCheckout()">
-            Proceed to Checkout
-        </button>
-    `;
+    document.getElementById('subtotal').textContent = `£${subtotal.toFixed(2)}`;
+    document.getElementById('total').textContent = `£${total.toFixed(2)}`;
     
-    document.querySelector('.card-body').innerHTML = summaryHTML;
-    
-    // Save total to cart
-    cart.total = total;
-    localStorage.setItem('cart', JSON.stringify(cart));
+    // Show/hide discount
+    const discountRow = document.getElementById('discount-row');
+    if (discount > 0) {
+        discountRow.classList.remove('d-none');
+        document.getElementById('discount-text').textContent = discountText;
+        document.getElementById('discount-amount').textContent = `-£${discountAmount.toFixed(2)}`;
+    } else {
+        discountRow.classList.add('d-none');
+    }
 }
 
 function removeFromCart() {
     localStorage.removeItem('cart');
-    document.getElementById('cart-count').textContent = '0';
     updateCart();
 }
 
@@ -189,20 +159,17 @@ function proceedToCheckout() {
     alert('Checkout functionality coming soon!');
 }
 
-function updateQuantity(newQuantity) {
-    newQuantity = Math.max(1, Math.min(10, parseInt(newQuantity) || 1));
-    
-    let cart = JSON.parse(localStorage.getItem('cart')) || { items: [], total: 0 };
+// Add event listener for quantity changes
+document.querySelector('.quantity-input').addEventListener('change', function(e) {
+    const cart = JSON.parse(localStorage.getItem('cart')) || { items: [], total: 0 };
     if (cart.items.length > 0) {
-        cart.items[0].quantity = newQuantity;
-        
-        // Save updated cart
+        cart.items[0].quantity = parseInt(e.target.value);
         localStorage.setItem('cart', JSON.stringify(cart));
-        
-        // Update display
-        document.getElementById('cart-count').textContent = newQuantity;
         updateCart();
     }
-}
+});
+
+// Initial cart update
+updateCart();
 </script>
 {% endblock %} 
