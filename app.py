@@ -1,4 +1,4 @@
-from flask import Flask, render_template, flash, redirect, url_for, jsonify, request, session
+from flask import Flask, render_template, flash, redirect, url_for, jsonify, request, session, current_app
 from flask_mail import Mail, Message
 from forms import ContactForm
 from config import Config
@@ -9,13 +9,21 @@ import os
 import paypalrestsdk
 from datetime import datetime, timedelta
 import uuid
+from flask_wtf.csrf import CSRFProtect
+import traceback
 
-# Set up logging
-logging.basicConfig(level=logging.DEBUG)
+# Set up logging with more detail
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# Initialize CSRF protection
+csrf = CSRFProtect(app)
 mail = Mail(app)
 
 # PayPal configuration
@@ -44,92 +52,72 @@ def contact():
     form = ContactForm()
     if form.validate_on_submit():
         try:
-            logger.debug('Attempting to send email...')
-            logger.debug(f'Mail settings: SERVER={app.config["MAIL_SERVER"]}, PORT={app.config["MAIL_PORT"]}')
-            logger.debug(f'From: {app.config["MAIL_USERNAME"]}')
-            
-            # Send the form data to site owner
-            msg = Message(
+            # Send email to skyremotes
+            admin_msg = Message(
                 subject=f"Contact Form: {form.subject.data}",
-                recipients=['sky.remotes.co.uk@gmail.com'],
-                body=f"Name: {form.name.data}\nEmail: {form.email.data}\nSubject: {form.subject.data}\n\nMessage:\n{form.message.data}"
-            )
-            logger.debug('Message object created')
-            
-            # Add headers to prevent spam classification
-            msg.extra_headers = {
-                "List-Unsubscribe": "<mailto:sky.remotes.co.uk@gmail.com>",
-                "Precedence": "bulk",
-                "X-Auto-Response-Suppress": "OOF",
-                "Auto-Submitted": "auto-generated"
-            }
-            logger.debug('Headers added')
-            
-            # Add a more professional format
-            msg.html = f"""
-            <html>
-                <body>
-                    <h2>New Contact Form Submission</h2>
-                    <p><strong>Name:</strong> {form.name.data}</p>
-                    <p><strong>Email:</strong> {form.email.data}</p>
-                    <p><strong>Subject:</strong> {form.subject.data}</p>
-                    <h3>Message:</h3>
-                    <p>{form.message.data}</p>
-                    <hr>
-                    <p><small>This email was sent from the skyremotes contact form.</small></p>
-                </body>
-            </html>
-            """
-            logger.debug('HTML content added')
-            
-            try:
-                mail.send(msg)
-                logger.debug('Main email sent successfully')
-            except Exception as e:
-                logger.error(f'Error sending main email: {str(e)}')
-                raise
-            
-            # Auto-reply with similar headers
-            try:
-                auto_reply = Message(
-                    subject="Thank you for contacting Sky Remotes",
-                    recipients=[form.email.data],
-                    sender=("Sky Remotes", "sky.remotes.co.uk@gmail.com")
-                )
-                auto_reply.extra_headers = {
-                    "List-Unsubscribe": "<mailto:sky.remotes.co.uk@gmail.com>",
-                    "Precedence": "bulk",
-                    "X-Auto-Response-Suppress": "OOF",
-                    "Auto-Submitted": "auto-generated"
-                }
-                auto_reply.html = f"""
-                <html>
-                    <body>
-                        <h2>Thank you for contacting Sky Remotes</h2>
-                        <p>Dear {form.name.data},</p>
-                        <p>We have received your message and will get back to you shortly.</p>
-                        <h3>Your message details:</h3>
-                        <p><strong>Subject:</strong> {form.subject.data}</p>
-                        <p><strong>Message:</strong><br>{form.message.data}</p>
-                        <hr>
-                        <p>Best regards,<br>
-                        Sky Remotes Team<br>
-                        <a href="mailto:sky.remotes.co.uk@gmail.com">sky.remotes.co.uk@gmail.com</a></p>
-                    </body>
-                </html>
+                sender=app.config['MAIL_DEFAULT_SENDER'],
+                recipients=['info@skyremotes.co.uk'],
+                body=f"""
+Name: {form.name.data}
+Email: {form.email.data}
+Subject: {form.subject.data}
+
+Message:
+{form.message.data}
                 """
-                
-                mail.send(auto_reply)
-                logger.debug('Auto-reply sent successfully')
-            except Exception as e:
-                logger.error(f'Error sending auto-reply: {str(e)}')
-                # Continue even if auto-reply fails
+            )
+            mail.send(admin_msg)
             
-            flash('Your message has been sent successfully!\nWe will get back to you soon.\nCheck your spam folder', 'success')
+            # Send auto-reply to customer
+            customer_msg = Message(
+                subject="Thank you for contacting Sky Remotes",
+                sender=app.config['MAIL_DEFAULT_SENDER'],
+                recipients=[form.email.data],
+                html=f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2>Thank you for contacting Sky Remotes</h2>
+                    
+                    <p>Dear {form.name.data},</p>
+                    
+                    <p>We have received your message and will get back to you as soon as possible. Our team typically responds within 24 hours during business days.</p>
+                    
+                    <p><strong>Your Message Details:</strong></p>
+                    <ul>
+                        <li>Subject: {form.subject.data}</li>
+                        <li>Date: {datetime.now().strftime('%d-%m-%Y %H:%M')}</li>
+                    </ul>
+                    
+                    <div style="background-color: #f8f9fa; padding: 15px; margin: 20px 0; border-radius: 5px;">
+                        <h3>Quick Information:</h3>
+                        <ul>
+                            <li>Business Hours: Monday - Friday, 9:00 AM - 5:00 PM</li>
+                            <li>Phone: +44 7737 463348</li>
+                            <li>Email: info@skyremotes.co.uk</li>
+                            <li>Same Day Dispatch for orders before 1PM</li>
+                        </ul>
+                    </div>
+                    
+                    <p>If you have an urgent inquiry, please don't hesitate to call us during business hours.</p>
+                    
+                    <p>Best regards,<br>
+                    The Sky Remotes Team</p>
+                </div>
+                """
+            )
+            mail.send(customer_msg)
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': True})
+            
+            flash('Your message has been sent successfully!', 'success')
             return redirect(url_for('contact'))
+            
         except Exception as e:
-            logger.error(f'Mail error: {str(e)}')
-            flash(f'Error: Could not authenticate with email server. Please try again later or email us directly. Error: {str(e)}', 'error')
+            logger.error(f'Error sending email: {str(e)}')
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'error': str(e)})
+            flash('Error sending message. Please try again.', 'error')
+    
     return render_template('contact.html', form=form)
 
 @app.route('/benefits')
@@ -154,43 +142,65 @@ def help():
 
 @app.route('/process-order', methods=['POST'])
 def process_order():
-    data = request.json
-    
-    # Generate order ID
-    order_id = str(uuid.uuid4())[:8].upper()
-    
-    # Calculate estimated delivery (next business day if ordered before 1PM)
-    now = datetime.now()
-    if now.hour < 13:  # Before 1PM
-        estimated_delivery = (now + timedelta(days=1)).strftime('%A, %B %d')
-    else:
-        estimated_delivery = (now + timedelta(days=2)).strftime('%A, %B %d')
-
-    # Create order object
-    order = {
-        'id': order_id,
-        'date': now.strftime('%Y-%m-%d %H:%M:%S'),
-        'shipping': data['shippingDetails'],
-        'paypal_order_id': data['orderID'],
-        'quantity': data['quantity'],
-        'total': data['total'],
-        'estimated_delivery': estimated_delivery
-    }
-
-    # Send confirmation email
     try:
-        send_order_confirmation(order)
+        data = request.json
+        
+        # Generate order ID
+        order_id = str(uuid.uuid4())[:8].upper()
+        
+        # Calculate estimated delivery
+        now = datetime.now()
+        if now.hour < 13:  # Before 1PM
+            estimated_delivery = (now + timedelta(days=1)).strftime('%A, %B %d')
+        else:
+            estimated_delivery = (now + timedelta(days=2)).strftime('%A, %B %d')
+
+        # Create order object
+        order = {
+            'id': order_id,
+            'date': now.strftime('%Y-%m-%d %H:%M:%S'),
+            'shipping': data['shippingDetails'],
+            'paypal_order_id': data['orderID'],
+            'quantity': data['quantity'],
+            'total': data['total'],
+            'estimated_delivery': estimated_delivery
+        }
+
+        # Send confirmation email
+        try:
+            msg = Message(
+                subject=f'Order Confirmation - Sky Remotes #{order["id"]}',
+                recipients=[order['shipping']['email']],
+                sender=current_app.config['MAIL_DEFAULT_SENDER']
+            )
+            
+            msg.html = render_template(
+                'emails/order_confirmation.html',
+                order=order
+            )
+            
+            mail.send(msg)
+            print(f"Email sent successfully to {order['shipping']['email']}")  # Debug log
+            
+        except Exception as e:
+            print(f"Failed to send email: {str(e)}")  # Debug log
+            # Continue processing even if email fails
+            
+        # Store order in session for success page
+        session['last_order'] = order
+
+        return jsonify({
+            "status": "success",
+            "message": "Order processed successfully",
+            "order_id": order_id
+        })
+        
     except Exception as e:
-        app.logger.error(f"Failed to send confirmation email: {str(e)}")
-
-    # Store order in session for success page
-    session['last_order'] = order
-
-    return jsonify({
-        "status": "success",
-        "message": "Order processed successfully",
-        "order_id": order_id
-    })
+        print(f"Order processing error: {str(e)}")  # Debug log
+        return jsonify({
+            "status": "error",
+            "message": "There was a problem processing your order"
+        }), 500
 
 @app.route('/order-success')
 def order_success():
@@ -203,28 +213,45 @@ def order_success():
     
     return render_template('order-success.html', order=order)
 
-def send_order_confirmation(order):
+# Add a test route
+@app.route('/test-mail-config')
+def test_mail_config():
+    config_info = {
+        'MAIL_SERVER': app.config['MAIL_SERVER'],
+        'MAIL_PORT': app.config['MAIL_PORT'],
+        'MAIL_USE_TLS': app.config['MAIL_USE_TLS'],
+        'MAIL_USERNAME': app.config['MAIL_USERNAME'],
+        'MAIL_DEFAULT_SENDER': app.config['MAIL_DEFAULT_SENDER']
+    }
+    logger.debug(f'Mail configuration: {config_info}')
+    return jsonify(config_info)
+
+@app.route('/test-email')
+def test_email():
     try:
+        logger.debug('Testing email configuration...')
         msg = Message(
-            subject=f"Order Confirmation - Sky Remotes #{order['id']}",
-            recipients=[order['shipping']['email']]
+            subject='Test Email',
+            sender=app.config['MAIL_DEFAULT_SENDER'],
+            recipients=['info@skyremotes.co.uk'],
+            body='This is a test email'
         )
         
-        msg.html = render_template(
-            'emails/order_confirmation.html',
-            order=order
-        )
-        
-        print(f"Attempting to send email to {order['shipping']['email']}")  # Debug log
+        logger.debug('Attempting to send test email...')
         mail.send(msg)
-        print("Email sent successfully")  # Debug log
-        
+        logger.debug('Test email sent successfully')
+        return 'Test email sent successfully! Check logs for details.'
     except Exception as e:
-        print(f"Email error: {str(e)}")  # Debug log
-        # Log the full error details
-        import traceback
-        print(traceback.format_exc())
-        raise  # Re-raise the exception to see it in the Flask logs
+        error_details = f'Error: {str(e)}\n\nTraceback:\n{traceback.format_exc()}'
+        logger.error(error_details)
+        return f'Error sending test email: {error_details}'
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8091, debug=True) 
+    # Log the configuration at startup
+    logger.debug('Starting application with configuration:')
+    logger.debug(f'MAIL_SERVER: {app.config["MAIL_SERVER"]}')
+    logger.debug(f'MAIL_PORT: {app.config["MAIL_PORT"]}')
+    logger.debug(f'MAIL_USE_TLS: {app.config["MAIL_USE_TLS"]}')
+    logger.debug(f'MAIL_USERNAME: {app.config["MAIL_USERNAME"]}')
+    
+    app.run(host='127.0.0.1', port=8091, debug=True) 

@@ -4,71 +4,102 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h1 class="mb-4">Contact Us</h1>
+    <h1>Contact Us</h1>
     
-    <div class="row">
-        <div class="col-md-6 mb-4">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h2 class="h5 mb-0"><i class="fas fa-address-card"></i> Contact Information</h2>
-                </div>
+    <!-- Contact Information -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <!-- White background box for intro text -->
+            <div class="card bg-white text-dark mb-4">
                 <div class="card-body">
-                    <p class="mb-3">
-                        <i class="fas fa-envelope me-2 text-primary"></i>
-                        <strong>Email:</strong><br>
-                        <a href="mailto:info@skyremotes.co.uk">info@skyremotes.co.uk</a>
-                    </p>
-                    <p class="mb-3">
-                        <i class="fas fa-phone me-2 text-primary"></i>
-                        <strong>Helpline:</strong><br>
-                        <a href="tel:+447737463348">+44 7737 463348</a>
-                    </p>
-                    <p class="mb-0">
-                        <i class="fas fa-clock me-2 text-primary"></i>
-                        <strong>Shipping:</strong><br>
-                        Orders before 1PM ship same day
-                    </p>
+                    <p class="lead mb-2">Have a question about our Sky Remote Controls? We're here to help.</p>
+                    <p class="mb-0">For immediate assistance or product inquiries, please contact us using any of the methods below or fill out our contact form. Our team aims to respond to all inquiries within 24 hours.</p>
                 </div>
             </div>
-
-            <div class="card mt-4">
-                <div class="card-header bg-primary text-white">
-                    <h2 class="h5 mb-0"><i class="fas fa-info-circle"></i> Important Information</h2>
+            
+            <div class="row mt-4 mb-4">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-envelope fa-2x text-primary me-3"></i>
+                        <div>
+                            <h5 class="mb-1">Email Us</h5>
+                            <a href="mailto:info@skyremotes.co.uk" class="text-light">info@skyremotes.co.uk</a>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <ul class="list-unstyled mb-0">
-                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>UK Based Company</li>
-                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Genuine Sky Products</li>
-                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>30-Day Returns Policy</li>
-                        <li><i class="fas fa-check-circle text-success me-2"></i>PayPal Buyer Protection</li>
-                    </ul>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-phone fa-2x text-primary me-3"></i>
+                        <div>
+                            <h5 class="mb-1">Call Us</h5>
+                            <a href="tel:+447737463348" class="text-light">+44 7737 463348</a>
+                            <p class="small mb-0">Monday - Friday, 9:00 AM - 5:00 PM</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+    </div>
 
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="successModalLabel">Message Sent!</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Your message has been sent successfully! We'll get back to you soon.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Form and Images Row -->
+    <div class="row">
+        <!-- Left Sky Remote Image - Hidden on mobile -->
+        <div class="col-md-3 d-none d-md-flex align-items-center justify-content-center">
+            <img src="{{ url_for('static', filename='images/SkyRemote.png') }}" 
+                 alt="Sky Remote Control" 
+                 class="img-fluid rounded shadow-lg">
+        </div>
+
+        <!-- Contact Form Box -->
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h2 class="h5 mb-0"><i class="fas fa-paper-plane"></i> Send Us a Message</h2>
+            <div class="card bg-dark text-white">
+                <div class="card-header">
+                    <h4 class="mb-0">Send Us a Message</h4>
                 </div>
                 <div class="card-body">
-                    <form action="{{ url_for('contact') }}" method="POST">
+                    <p class="mb-4">Please fill out the form below and we'll get back to you as soon as possible.</p>
+                    
+                    <form method="POST" action="{{ url_for('contact') }}" id="contactForm">
+                        {{ form.hidden_tag() }}
+                        
                         <div class="mb-3">
-                            <label for="name" class="form-label">Name</label>
-                            <input type="text" class="form-control" id="name" name="name" required>
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control", placeholder="Your Name") }}
                         </div>
+
                         <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" required>
+                            {{ form.email.label(class="form-label") }}
+                            {{ form.email(class="form-control", placeholder="your@email.com") }}
                         </div>
+
                         <div class="mb-3">
-                            <label for="subject" class="form-label">Subject</label>
-                            <input type="text" class="form-control" id="subject" name="subject" required>
+                            {{ form.subject.label(class="form-label") }}
+                            {{ form.subject(class="form-control", placeholder="Subject") }}
                         </div>
+
                         <div class="mb-3">
-                            <label for="message" class="form-label">Message</label>
-                            <textarea class="form-control" id="message" name="message" rows="5" required></textarea>
+                            {{ form.message.label(class="form-label") }}
+                            {{ form.message(class="form-control", rows="5", placeholder="Your Message") }}
                         </div>
+
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-paper-plane me-2"></i>Send Message
                         </button>
@@ -76,6 +107,57 @@
                 </div>
             </div>
         </div>
+
+        <!-- Right Sky Remote Image - Hidden on mobile -->
+        <div class="col-md-3 d-none d-md-flex align-items-center justify-content-center">
+            <img src="{{ url_for('static', filename='images/SkyRemote.png') }}" 
+                 alt="Sky Remote Control" 
+                 class="img-fluid rounded shadow-lg">
+        </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                {% if category == 'success' %}
+                    var successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                    successModal.show();
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    const form = document.getElementById('contactForm');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                var successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                successModal.show();
+                form.reset();
+            } else {
+                alert('There was an error sending your message. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('There was an error sending your message. Please try again.');
+        });
+    });
+});
+</script>
+{% endblock %}
 {% endblock %}
