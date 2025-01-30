@@ -30,7 +30,7 @@
                                     </td>
                                     <td class="row-total">£29.95</td>
                                     <td>
-                                        <button class="btn btn-danger btn-sm remove-item">
+                                        <button class="btn btn-danger btn-sm delete-btn" onclick="deleteItem()">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </td>
@@ -74,6 +74,12 @@
 </div>
 
 <script>
+function deleteItem() {
+    console.log('Deleting item from cart');
+    localStorage.removeItem('cart');
+    updateCart();
+}
+
 function updateCart() {
     const cart = JSON.parse(localStorage.getItem('cart')) || { items: [], total: 0 };
     const cartContent = document.getElementById('cart-content');
@@ -106,11 +112,6 @@ function updateCart() {
     // Update order summary
     document.getElementById('subtotal').textContent = `£${total.toFixed(2)}`;
     document.getElementById('total').textContent = `£${total.toFixed(2)}`;
-}
-
-function removeFromCart() {
-    localStorage.removeItem('cart');
-    updateCart();
 }
 
 function proceedToCheckout() {

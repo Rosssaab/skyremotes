@@ -16,29 +16,30 @@
             <p>Order #{{ order.id }}</p>
         </div>
 
-        <p>Dear {{ order.shipping.firstName }},</p>
+        <p>Dear {{ order.customer.name }},</p>
         
         <p>Thank you for shopping with Sky Remotes. We're processing your order and will ship it soon.</p>
 
         <div class="order-details">
             <h2>Order Summary</h2>
-            <p>Sky Remote Control × {{ order.quantity }}</p>
+            <p>Sky Remote Control × 1</p>
             <p>Subtotal: £{{ "%.2f"|format(order.subtotal) }}</p>
-            {% if order.discount > 0 %}
-                <p>Discount: -£{{ "%.2f"|format(order.discount) }}</p>
-            {% endif %}
             <p>Shipping: FREE</p>
             <p><strong>Total: £{{ "%.2f"|format(order.total) }}</strong></p>
 
+            <h2>Customer Details</h2>
+            <p>
+                <strong>Name:</strong> {{ order.customer.name }}<br>
+                <strong>Email:</strong> {{ order.customer.email }}<br>
+                <strong>Phone:</strong> {{ order.customer.phone }}
+            </p>
+
             <h2>Shipping Address</h2>
             <p>
-                {{ order.shipping.firstName }} {{ order.shipping.lastName }}<br>
-                {{ order.shipping.address }}<br>
-                {% if order.shipping.address2 %}
-                    {{ order.shipping.address2 }}<br>
-                {% endif %}
-                {{ order.shipping.city }}<br>
-                {{ order.shipping.postcode }}
+                {{ order.customer.name }}<br>
+                {{ order.customer.address.line1 }}<br>
+                {{ order.customer.address.city }}<br>
+                {{ order.customer.address.postcode }}
             </p>
 
             <h2>Estimated Delivery</h2>

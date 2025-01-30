@@ -74,30 +74,31 @@
         </div>
 
         <div class="col-md-4">
-            <div class="card mb-4">
+            <div class="card bg-dark">
                 <div class="card-header bg-primary text-white">
                     <h2 class="h5 mb-0"><i class="fas fa-shopping-cart"></i> Order Summary</h2>
                 </div>
                 <div class="card-body">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Sky Remote Control</span>
-                        <span>×<span id="quantity">0</span></span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
+                    <div class="d-flex justify-content-between mb-3">
                         <span>Subtotal:</span>
-                        <span id="subtotal">£0.00</span>
+                        <span id="subtotal">£{{ total }}</span>
                     </div>
                     <div class="d-flex justify-content-between mb-3">
                         <span>Shipping:</span>
-                        <span class="text-success">FREE</span>
+                        <span>FREE</span>
                     </div>
-                    <hr>
                     <div class="d-flex justify-content-between mb-3">
                         <strong>Total:</strong>
-                        <strong id="total">£0.00</strong>
+                        <strong id="total">£{{ total }}</strong>
                     </div>
 
-                    <div id="paypal-button-container"></div>
+                    <!-- PayPal Button Container -->
+                    <div id="paypal-button-container" class="mb-3"></div>
+
+                    <!-- Delete Order Button -->
+                    <button type="button" id="deleteOrderBtn" class="btn btn-danger w-100" onclick="deleteOrder()">
+                        <i class="fas fa-trash"></i> Delete Order
+                    </button>
                 </div>
             </div>
 
@@ -115,115 +116,96 @@
     </div>
 </div>
 
+<!-- Add this modal HTML at the bottom of your body -->
+<div class="modal fade" id="orderConfirmationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Order Confirmed!</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Thank you for your order! Your Sky Remote will be dispatched soon.</p>
+                <p>Order details have been sent to your email.</p>
+                <p>Order ID: <span id="orderIdSpan"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="window.location.href='/'">Return to Home</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% block extra_js %}
-<!-- PayPal SDK -->
 <script src="https://www.paypal.com/sdk/js?client-id={{ config.PAYPAL_CLIENT_ID }}&currency=GBP"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const cart = JSON.parse(localStorage.getItem('cart')) || { items: [], total: 0 };
-    if (cart.items.length === 0) {
-        window.location.href = "{{ url_for('cart') }}";
-        return;
-    }
+function deleteOrder() {
+    localStorage.removeItem('cart');
+    window.location.href = "{{ url_for('cart') }}";
+}
 
-    const quantity = cart.items[0].quantity;
-    const unitPrice = 29.95;
-    const total = (quantity * unitPrice).toFixed(2);
-
-    // Update order summary
-    document.getElementById('quantity').textContent = quantity;
-    document.getElementById('subtotal').textContent = `£${total}`;
-    document.getElementById('total').textContent = `£${total}`;
-
-    paypal.Buttons({
-        style: {
-            layout: 'vertical',
-            color:  'blue',
-            shape:  'rect',
-            label:  'paypal'
-        },
-        
-        createOrder: function(data, actions) {
-            // Validate form first
-            const form = document.getElementById('shipping-form');
-            if (!form.checkValidity()) {
-                form.reportValidity();
-                return;
-            }
-
-            return actions.order.create({
-                purchase_units: [{
-                    description: 'Sky Remote Control',
-                    amount: {
-                        currency_code: 'GBP',
-                        value: total,
-                        breakdown: {
-                            item_total: {
-                                currency_code: 'GBP',
-                                value: total
-                            }
-                        }
-                    },
-                    items: [{
-                        name: 'Sky Remote Control',
-                        unit_amount: {
-                            currency_code: 'GBP',
-                            value: '29.95'
-                        },
-                        quantity: quantity.toString()
-                    }]
-                }]
-            });
-        },
-        
-        onApprove: function(data, actions) {
-            return actions.order.capture().then(function(orderData) {
-                // Get shipping details
-                const shippingDetails = {
-                    firstName: document.getElementById('firstName').value,
-                    lastName: document.getElementById('lastName').value,
-                    email: document.getElementById('email').value,
-                    phone: document.getElementById('phone').value,
-                    address: document.getElementById('address').value,
-                    address2: document.getElementById('address2').value,
-                    city: document.getElementById('city').value,
-                    postcode: document.getElementById('postcode').value
-                };
-
-                // Send order details to server
-                return fetch('/process-order', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        orderID: data.orderID,
-                        paypalOrderData: orderData,
-                        shippingDetails: shippingDetails,
-                        quantity: quantity,
-                        total: total
-                    })
+// PayPal button initialization
+paypal.Buttons({
+    createOrder: function(data, actions) {
+        return actions.order.create({
+            purchase_units: [{
+                amount: {
+                    currency_code: "GBP",
+                    value: "29.95"
+                },
+                description: "Sky Remote Control"
+            }]
+        });
+    },
+    onApprove: function(data, actions) {
+        return actions.order.capture().then(function(details) {
+            const shippingDetails = {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('address').value,
+                city: document.getElementById('city').value,
+                postcode: document.getElementById('postcode').value
+            };
+            
+            return fetch('{{ url_for("process_order") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    orderID: data.orderID,
+                    paypalDetails: details,
+                    shippingDetails: shippingDetails,
+                    total: "29.95"
                 })
-                .then(response => response.json())
-                .then(function(orderConfirmation) {
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Show confirmation modal
+                    document.getElementById('orderIdSpan').textContent = data.order_id;
+                    const modal = new bootstrap.Modal(document.getElementById('orderConfirmationModal'));
+                    modal.show();
+                    
                     // Clear cart
                     localStorage.removeItem('cart');
-                    // Redirect to success page
-                    window.location.href = "{{ url_for('order_success') }}";
-                })
-                .catch(function(error) {
-                    console.error('Error:', error);
-                    alert('There was a problem processing your order. Please try again.');
-                });
+                } else {
+                    throw new Error(data.message || 'Order processing failed');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('There was a problem processing your order: ' + error.message);
             });
-        },
-
-        onError: function(err) {
-            console.error('PayPal Error:', err);
-            alert('There was a problem with PayPal. Please try again.');
-        }
-    }).render('#paypal-button-container');
-});
+        });
+    },
+    onError: function(err) {
+        console.error('PayPal Error:', err);
+        alert('PayPal Error: ' + err);
+    }
+}).render('#paypal-button-container');
 </script>
 {% endblock %}
 {% endblock %} 
