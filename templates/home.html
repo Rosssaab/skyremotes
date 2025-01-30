@@ -2,9 +2,61 @@
 
 {% block title %}Home{% endblock %}
 
+{% block extra_css %}
+<style>
+    .image-container-matched {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .image-container-matched img {
+        max-height: 650px;
+        width: auto;
+        margin: 0 auto;
+        object-fit: contain;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
-    <h1>Welcome to Sky Remotes UK</h1>
-    <p>Find your perfect Sky remote control replacement here.</p>
+    <div class="text-center mb-5">
+        <h1 class="display-4">Welcome to Sky Remotes, shipped from the UK</h1>
+        <h2 class="text-primary">100% Genuine Sky Remote Controls</h2>
+    </div>
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <div class="image-container-matched">
+                <img src="{{ url_for('static', filename='images/SkyRemote.png') }}" 
+                     alt="Genuine Sky Remote Control" 
+                     class="img-fluid rounded shadow">
+                <p class="text-center mt-2"><small class="text-muted">Official Sky Remote Control</small></p>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-4">
+                <p class="lead">We exclusively sell genuine Sky remote controls - directly sourced from Sky's approved suppliers.</p>
+                <p><strong>Why Choose Our Genuine Sky Remotes?</strong></p>
+                <ul class="list-unstyled">
+                    <li>✓ 100% Original Sky Equipment</li>
+                    <li>✓ Full Compatibility Guaranteed</li>
+                    <li>✓ All Functions Work Perfectly</li>
+                    <li>✓ 12-Month Warranty</li>
+                </ul>
+            </div>
+            
+            <div class="alert alert-warning">
+                <h3 class="h5">Beware of Cheap Copies!</h3>
+                <p>Many websites sell counterfeit Sky remotes that can cause issues:</p>
+                <ul>
+                    <li>Unreliable signal reception</li>
+                    <li>Missing or malfunctioning features</li>
+                    <li>Poor build quality and short lifespan</li>
+                    <li>Risk of damaging your Sky box</li>
+                </ul>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %} 

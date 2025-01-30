@@ -4,14 +4,14 @@ class Config:
     SECRET_KEY = 'your-secret-key-here'
     DEBUG = False
     
-    # Mail Settings for One.com
-    MAIL_SERVER = 'send.one.com'
-    MAIL_PORT = 465
-    MAIL_USE_SSL = True  # Note: Using SSL instead of TLS for port 465
-    MAIL_USE_TLS = False
-    MAIL_USERNAME = 'info@skyremotes.uk'
-    MAIL_PASSWORD = '1LoveDad#'  # Replace with your actual email password
-    MAIL_DEFAULT_SENDER = 'info@skyremotes.uk'
+    # Mail Settings for Gmail
+    MAIL_SERVER = 'smtp.gmail.com'
+    MAIL_PORT = 587
+    MAIL_USE_TLS = True
+    MAIL_USE_SSL = False
+    MAIL_USERNAME = 'sky.remotes.co.uk@gmail.com'
+    MAIL_PASSWORD = 'qpxl nkjq ffts wweh'  # Your App Password
+    MAIL_DEFAULT_SENDER = ('Sky Remotes', 'info@skyremotes.co.uk')
     
     # IMAP settings
     IMAP_SERVER = 'imap.one.com'

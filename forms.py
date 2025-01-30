@@ -13,14 +13,10 @@ class ContactForm(FlaskForm):
         Email(message="Please enter a valid email address")
     ])
     
-    subject = SelectField('Subject', choices=[
-        ('Request Free eBook', 'Request Free eBook'),
-        ('Water Sample Request', 'Request Water Sample'),
-        ('Machine Demo Request', 'Book a Machine Demo'),
-        ('Price Enquiry', 'Get Pricing Information'),
-        ('Product Information', 'General Product Information'),
-        ('Business Opportunity', 'Business Opportunity'),
-    ], validators=[DataRequired()])
+    subject = StringField('Subject', validators=[
+        DataRequired(),
+        Length(min=2, max=100, message="Subject must be between 2 and 100 characters")
+    ])
     
     message = TextAreaField('Message', validators=[
         DataRequired(),
