@@ -30,7 +30,7 @@
                                     </td>
                                     <td class="row-total">£29.95</td>
                                     <td>
-                                        <button class="btn btn-danger btn-sm remove-item">
+                                        <button class="btn btn-danger btn-sm" onclick="removeFromCart()">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </td>
@@ -90,44 +90,48 @@ function updateCart() {
     cartContent.classList.remove('d-none');
     cartEmpty.classList.add('d-none');
     
-    const quantity = cart.items[0].quantity;
+    const quantity = cart.items[0].quantity || 1;
     const unitPrice = 29.95;
-    const total = quantity * unitPrice;
+    const total = (quantity * unitPrice).toFixed(2);
     
     // Update quantity input and row total
     const quantityInput = document.querySelector('.quantity-input');
     const rowTotalSpan = document.querySelector('.row-total');
     if (quantityInput) quantityInput.value = quantity;
-    if (rowTotalSpan) rowTotalSpan.textContent = `£${total.toFixed(2)}`;
+    if (rowTotalSpan) rowTotalSpan.textContent = `£${total}`;
     
     // Update cart count
     cartCount.textContent = quantity;
     
     // Update order summary
-    document.getElementById('subtotal').textContent = `£${total.toFixed(2)}`;
-    document.getElementById('total').textContent = `£${total.toFixed(2)}`;
+    document.getElementById('subtotal').textContent = `£${total}`;
+    document.getElementById('total').textContent = `£${total}`;
 }
 
 function removeFromCart() {
+    console.log('Removing item from cart...');
     localStorage.removeItem('cart');
     updateCart();
-}
-
-function proceedToCheckout() {
-    alert('Checkout functionality coming soon!');
+    // Redirect to cart page with empty cart message
+    window.location.reload();
 }
 
 // Add event listener for quantity changes
-document.querySelector('.quantity-input').addEventListener('change', function(e) {
-    const cart = JSON.parse(localStorage.getItem('cart')) || { items: [], total: 0 };
-    if (cart.items.length > 0) {
-        cart.items[0].quantity = parseInt(e.target.value);
-        localStorage.setItem('cart', JSON.stringify(cart));
-        updateCart();
+document.addEventListener('DOMContentLoaded', function() {
+    const quantityInput = document.querySelector('.quantity-input');
+    if (quantityInput) {
+        quantityInput.addEventListener('change', function(e) {
+            const cart = JSON.parse(localStorage.getItem('cart')) || { items: [], total: 0 };
+            if (cart.items.length > 0) {
+                cart.items[0].quantity = parseInt(e.target.value);
+                localStorage.setItem('cart', JSON.stringify(cart));
+                updateCart();
+            }
+        });
     }
-});
 
-// Initial cart update
-updateCart();
+    // Initial cart update
+    updateCart();
+});
 </script>
 {% endblock %} 

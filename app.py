@@ -146,7 +146,12 @@ def process_order():
     try:
         data = request.get_json()
         app.logger.info('Processing order...')
-        app.logger.info(f'Order data: {data}')
+        app.logger.info(f'PayPal Transaction ID: {data.get("transactionID")}')
+        app.logger.info(f'PayPal Payment Status: {data.get("paymentStatus")}')
+
+        # Verify payment status
+        if data.get('paymentStatus') != 'COMPLETED':
+            raise Exception('Payment not completed')
 
         try:
             # Create customer confirmation email
@@ -156,17 +161,19 @@ def process_order():
                 recipients=[data['shippingDetails']['email']]
             )
             
-            # Prepare order data - simplified structure
+            # Prepare order data with transaction details
             order_data = {
                 'id': data['orderID'],
+                'transaction_id': data.get('transactionID'),
                 'shipping': data['shippingDetails'],
                 'quantity': data['quantity'],
-                'total': float(data['total']),  # Just use total, no subtotal needed
+                'total': float(data['total']),
                 'date': datetime.now().strftime('%d-%m-%Y %H:%M'),
-                'estimated_delivery': '2-3 working days'
+                'estimated_delivery': '2-3 working days',
+                'payment_method': 'PayPal' if data.get('transactionID') else 'Card'
             }
 
-            app.logger.info(f'Prepared order data: {order_data}')  # Log the prepared data
+            app.logger.info(f'Order data prepared: {order_data}')
 
             # Send customer confirmation
             customer_msg.html = render_template(
@@ -193,11 +200,11 @@ def process_order():
         except Exception as e:
             app.logger.error(f'Email error: {str(e)}')
             app.logger.error(traceback.format_exc())
-            # Continue processing even if email fails
             
         return jsonify({
             'status': 'success',
-            'message': 'Order processed successfully'
+            'message': 'Order processed successfully',
+            'transaction_id': data.get('transactionID')
         })
 
     except Exception as e:
@@ -281,6 +288,20 @@ def test_connection():
         })
     except Exception as e:
         app.logger.error(f'Test connection error: {str(e)}')
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/remove-from-cart', methods=['POST'])
+def remove_from_cart():
+    try:
+        return jsonify({
+            'status': 'success',
+            'message': 'Item removed from cart'
+        })
+    except Exception as e:
+        app.logger.error(f'Error removing item from cart: {str(e)}')
         return jsonify({
             'status': 'error',
             'message': str(e)

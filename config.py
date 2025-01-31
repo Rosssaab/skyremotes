@@ -27,5 +27,5 @@ class Config:
     
     # PayPal settings
     PAYPAL_MODE = 'live'  # Change to 'live' for production
-    PAYPAL_CLIENT_ID = 'AcHQ2A2MZh1YEQzDVnULfe7L6FkKE793ZiIQ-pT35daEQwid5_6l2ZX4_jUR_8JqEx-J1umiFJ8iF6Y1'
-    PAYPAL_CLIENT_SECRET = 'EIpxrhYmzqq__8n8xwiacv8HVuhCBH9hCaXK0C_9W4L_aAwCXl2azD7TfDUJZ2nEu1Ntg8hnB9I6gr74' 
+    PAYPAL_CLIENT_ID = 'AV8K6W4_wFN8K2yovwbnJGUA9kCpe-kQ7gb2NBqvjQVzoe8tVlp8V0ZX9x9D4AojNsb3u3NYrQCCml3A'
+    PAYPAL_CLIENT_SECRET = 'ELnwyrcbs7t0C2PFZsEetrcNR9XeooiOdy-SxCbmWB0pGK8u8HTwM_SqW2FGoa-cNJ3WxjU4R6tl6HVp' 
