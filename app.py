@@ -9,7 +9,7 @@ import os
 import paypalrestsdk
 from datetime import datetime, timedelta
 import uuid
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, generate_csrf
 import traceback
 
 # Set up logging with more detail
@@ -140,66 +140,72 @@ def checkout():
 def help():
     return render_template('help.html')
 
+@csrf.exempt
 @app.route('/process-order', methods=['POST'])
 def process_order():
     try:
-        data = request.json
-        
-        # Generate order ID
-        order_id = str(uuid.uuid4())[:8].upper()
-        
-        # Calculate estimated delivery
-        now = datetime.now()
-        if now.hour < 13:  # Before 1PM
-            estimated_delivery = (now + timedelta(days=1)).strftime('%A, %B %d')
-        else:
-            estimated_delivery = (now + timedelta(days=2)).strftime('%A, %B %d')
+        data = request.get_json()
+        app.logger.info('Processing order...')
+        app.logger.info(f'Order data: {data}')
 
-        # Create order object
-        order = {
-            'id': order_id,
-            'date': now.strftime('%Y-%m-%d %H:%M:%S'),
-            'shipping': data['shippingDetails'],
-            'paypal_order_id': data['orderID'],
-            'quantity': data['quantity'],
-            'total': data['total'],
-            'estimated_delivery': estimated_delivery
-        }
-
-        # Send confirmation email
         try:
-            msg = Message(
-                subject=f'Order Confirmation - Sky Remotes #{order["id"]}',
-                recipients=[order['shipping']['email']],
-                sender=current_app.config['MAIL_DEFAULT_SENDER']
+            # Create customer confirmation email
+            customer_msg = Message(
+                'Your Sky Remote Order Confirmation',
+                sender='Sky Remotes <info@skyremotes.co.uk>',
+                recipients=[data['shippingDetails']['email']]
             )
             
-            msg.html = render_template(
+            # Prepare order data - simplified structure
+            order_data = {
+                'id': data['orderID'],
+                'shipping': data['shippingDetails'],
+                'quantity': data['quantity'],
+                'total': float(data['total']),  # Just use total, no subtotal needed
+                'date': datetime.now().strftime('%d-%m-%Y %H:%M'),
+                'estimated_delivery': '2-3 working days'
+            }
+
+            app.logger.info(f'Prepared order data: {order_data}')  # Log the prepared data
+
+            # Send customer confirmation
+            customer_msg.html = render_template(
                 'emails/order_confirmation.html',
-                order=order
+                order=order_data
+            )
+            mail.send(customer_msg)
+            app.logger.info(f'Customer confirmation sent to {data["shippingDetails"]["email"]}')
+
+            # Send admin notification
+            admin_msg = Message(
+                f'New Order: {data["orderID"]}',
+                sender='Sky Remotes <info@skyremotes.co.uk>',
+                recipients=['info@skyremotes.co.uk']
             )
             
-            mail.send(msg)
-            print(f"Email sent successfully to {order['shipping']['email']}")  # Debug log
-            
+            admin_msg.html = render_template(
+                'emails/admin_order_notification.html',
+                order=order_data
+            )
+            mail.send(admin_msg)
+            app.logger.info('Admin notification sent')
+
         except Exception as e:
-            print(f"Failed to send email: {str(e)}")  # Debug log
+            app.logger.error(f'Email error: {str(e)}')
+            app.logger.error(traceback.format_exc())
             # Continue processing even if email fails
             
-        # Store order in session for success page
-        session['last_order'] = order
-
         return jsonify({
-            "status": "success",
-            "message": "Order processed successfully",
-            "order_id": order_id
+            'status': 'success',
+            'message': 'Order processed successfully'
         })
-        
+
     except Exception as e:
-        print(f"Order processing error: {str(e)}")  # Debug log
+        app.logger.error(f'Order processing error: {str(e)}')
+        app.logger.error(traceback.format_exc())
         return jsonify({
-            "status": "error",
-            "message": "There was a problem processing your order"
+            'status': 'error',
+            'message': str(e)
         }), 500
 
 @app.route('/order-success')
@@ -229,22 +235,56 @@ def test_mail_config():
 @app.route('/test-email')
 def test_email():
     try:
-        logger.debug('Testing email configuration...')
         msg = Message(
-            subject='Test Email',
+            'Test Email from Sky Remotes',
             sender=app.config['MAIL_DEFAULT_SENDER'],
-            recipients=['info@skyremotes.co.uk'],
-            body='This is a test email'
+            recipients=['info@skyremotes.co.uk']
         )
-        
-        logger.debug('Attempting to send test email...')
+        msg.body = 'This is a test email from Sky Remotes website'
         mail.send(msg)
-        logger.debug('Test email sent successfully')
-        return 'Test email sent successfully! Check logs for details.'
+        return 'Test email sent successfully!'
     except Exception as e:
-        error_details = f'Error: {str(e)}\n\nTraceback:\n{traceback.format_exc()}'
-        logger.error(error_details)
-        return f'Error sending test email: {error_details}'
+        app.logger.error(f'Test email error: {str(e)}')
+        return f'Error sending test email: {str(e)}'
+
+@app.route('/test-connection')
+def test_connection():
+    try:
+        # Test database
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT @@version;")
+        version = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        # Test email
+        try:
+            msg = Message(
+                'Test Email',
+                sender='info@skyremotes.co.uk',
+                recipients=['info@skyremotes.co.uk']
+            )
+            msg.body = "This is a test email from Sky Remotes"
+            mail.send(msg)
+            email_status = "Email test successful"
+        except Exception as e:
+            email_status = f"Email test failed: {str(e)}"
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Connection test completed',
+            'details': {
+                'database': f"Connected (Version: {version[0] if version else 'Unknown'})",
+                'email': email_status
+            }
+        })
+    except Exception as e:
+        app.logger.error(f'Test connection error: {str(e)}')
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 if __name__ == '__main__':
     # Log the configuration at startup

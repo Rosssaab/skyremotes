@@ -120,6 +120,9 @@
 <script src="https://www.paypal.com/sdk/js?client-id={{ config.PAYPAL_CLIENT_ID }}&currency=GBP"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Get CSRF token
+    const csrf_token = "{{ csrf_token() }}";
+    
     const cart = JSON.parse(localStorage.getItem('cart')) || { items: [], total: 0 };
     if (cart.items.length === 0) {
         window.location.href = "{{ url_for('cart') }}";
@@ -127,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const quantity = cart.items[0].quantity;
-    const unitPrice = 29.95;
+    const unitPrice = 2.00;
     const total = (quantity * unitPrice).toFixed(2);
 
     // Update order summary
@@ -138,9 +141,9 @@ document.addEventListener('DOMContentLoaded', function() {
     paypal.Buttons({
         style: {
             layout: 'vertical',
-            color:  'blue',
-            shape:  'rect',
-            label:  'paypal'
+            color: 'gold',
+            shape: 'rect',
+            label: 'checkout'
         },
         
         createOrder: function(data, actions) {
@@ -168,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         name: 'Sky Remote Control',
                         unit_amount: {
                             currency_code: 'GBP',
-                            value: '29.95'
+                            value: '2.00'
                         },
                         quantity: quantity.toString()
                     }]
@@ -178,7 +181,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         onApprove: function(data, actions) {
             return actions.order.capture().then(function(orderData) {
-                // Get shipping details
                 const shippingDetails = {
                     firstName: document.getElementById('firstName').value,
                     lastName: document.getElementById('lastName').value,
@@ -190,15 +192,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     postcode: document.getElementById('postcode').value
                 };
 
-                // Send order details to server
+                // Send order details to server with CSRF token
                 return fetch('/process-order', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrf_token  // Add CSRF token
                     },
                     body: JSON.stringify({
                         orderID: data.orderID,
-                        paypalOrderData: orderData,
+                        paypalDetails: orderData,
                         shippingDetails: shippingDetails,
                         quantity: quantity,
                         total: total
@@ -206,9 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .then(response => response.json())
                 .then(function(orderConfirmation) {
-                    // Clear cart
                     localStorage.removeItem('cart');
-                    // Redirect to success page
                     window.location.href = "{{ url_for('order_success') }}";
                 })
                 .catch(function(error) {
@@ -224,6 +225,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }).render('#paypal-button-container');
 });
+</script>
+
+<!-- Add this right after the PayPal SDK script -->
+<script>
+if (typeof paypal === 'undefined') {
+    console.error('PayPal SDK failed to load');
+} else {
+    console.log('PayPal SDK loaded successfully');
+    console.log('Mode:', '{{ config.PAYPAL_MODE }}');
+}
 </script>
 {% endblock %}
 {% endblock %} 
