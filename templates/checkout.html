@@ -57,18 +57,20 @@
                 </div>
             </div>
 
+            <!-- Payment Section -->
             <div class="card">
                 <div class="card-header bg-primary text-white">
                     <h2 class="h5 mb-0"><i class="fas fa-credit-card"></i> Payment Method</h2>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-info mb-3">
-                        <i class="fab fa-paypal me-2"></i>
-                        Secure payment processed by PayPal - You don't need a PayPal account
+                    <!-- Single Payment Option -->
+                    <div class="mb-4">
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-shield-alt me-2"></i>
+                            Secure payment - Pay with PayPal or Card (no PayPal account needed)
+                        </div>
+                        <div id="paypal-button-container"></div>
                     </div>
-                    
-                    <!-- PayPal Button Container -->
-                    <div id="paypal-button-container"></div>
                 </div>
             </div>
         </div>
@@ -81,11 +83,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">
                         <span>Sky Remote Control</span>
-                        <span>×<span id="quantity">0</span></span>
+                        <button class="btn btn-danger btn-sm" onclick="removeFromCart()">Delete</button>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Subtotal:</span>
-                        <span id="subtotal">£0.00</span>
+                        <span id="subtotal">£29.95</span>
                     </div>
                     <div class="d-flex justify-content-between mb-3">
                         <span>Shipping:</span>
@@ -94,10 +96,8 @@
                     <hr>
                     <div class="d-flex justify-content-between mb-3">
                         <strong>Total:</strong>
-                        <strong id="total">£0.00</strong>
+                        <strong id="total">£29.95</strong>
                     </div>
-
-                    <div id="paypal-button-container"></div>
                 </div>
             </div>
 
@@ -115,43 +115,33 @@
     </div>
 </div>
 
-{% block extra_js %}
-<!-- PayPal SDK -->
-<script src="https://www.paypal.com/sdk/js?client-id={{ config.PAYPAL_CLIENT_ID }}&currency=GBP"></script>
+<!-- PayPal SDK with additional parameters -->
+<script src="https://www.paypal.com/sdk/js?client-id={{ config.PAYPAL_CLIENT_ID }}&currency=GBP&intent=capture"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Get CSRF token
-    const csrf_token = "{{ csrf_token() }}";
-    
     const cart = JSON.parse(localStorage.getItem('cart')) || { items: [], total: 0 };
     if (cart.items.length === 0) {
         window.location.href = "{{ url_for('cart') }}";
         return;
     }
 
-    const quantity = cart.items[0].quantity;
-    const unitPrice = 2.00;
-    const total = (quantity * unitPrice).toFixed(2);
+    const quantity = cart.items[0].quantity || 1;
+    const total = (quantity * 29.95).toFixed(2);
 
-    // Update order summary
-    document.getElementById('quantity').textContent = quantity;
+    // Update all total displays
     document.getElementById('subtotal').textContent = `£${total}`;
     document.getElementById('total').textContent = `£${total}`;
 
     paypal.Buttons({
-        style: {
-            layout: 'vertical',
-            color: 'gold',
-            shape: 'rect',
-            label: 'checkout'
-        },
-        
         createOrder: function(data, actions) {
+            console.log('Creating PayPal order...');
+            
             // Validate form first
             const form = document.getElementById('shipping-form');
             if (!form.checkValidity()) {
                 form.reportValidity();
-                return;
+                return null;
             }
 
             return actions.order.create({
@@ -159,28 +149,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     description: 'Sky Remote Control',
                     amount: {
                         currency_code: 'GBP',
-                        value: total,
-                        breakdown: {
-                            item_total: {
-                                currency_code: 'GBP',
-                                value: total
-                            }
-                        }
-                    },
-                    items: [{
-                        name: 'Sky Remote Control',
-                        unit_amount: {
-                            currency_code: 'GBP',
-                            value: '2.00'
-                        },
-                        quantity: quantity.toString()
-                    }]
+                        value: total
+                    }
                 }]
             });
         },
         
         onApprove: function(data, actions) {
+            console.log('Payment approved, capturing order...');
             return actions.order.capture().then(function(orderData) {
+                console.log('Order captured:', orderData);
+                
+                // Get shipping details
                 const shippingDetails = {
                     firstName: document.getElementById('firstName').value,
                     lastName: document.getElementById('lastName').value,
@@ -192,12 +172,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     postcode: document.getElementById('postcode').value
                 };
 
-                // Send order details to server with CSRF token
+                // Send order details to server
                 return fetch('/process-order', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrf_token  // Add CSRF token
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         orderID: data.orderID,
@@ -217,24 +196,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('There was a problem processing your order. Please try again.');
                 });
             });
-        },
-
-        onError: function(err) {
-            console.error('PayPal Error:', err);
-            alert('There was a problem with PayPal. Please try again.');
         }
     }).render('#paypal-button-container');
 });
 </script>
-
-<!-- Add this right after the PayPal SDK script -->
-<script>
-if (typeof paypal === 'undefined') {
-    console.error('PayPal SDK failed to load');
-} else {
-    console.log('PayPal SDK loaded successfully');
-    console.log('Mode:', '{{ config.PAYPAL_MODE }}');
-}
-</script>
-{% endblock %}
 {% endblock %} 
