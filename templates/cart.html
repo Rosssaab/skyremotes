@@ -8,63 +8,61 @@
     
     <div id="cart-content">
         <div class="row">
-            <div class="col-md-8">
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Price</th>
-                                    <th>Quantity</th>
-                                    <th>Total</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Sky Remote Control</td>
-                                    <td>£29.95</td>
-                                    <td>
-                                        <input type="number" class="form-control quantity-input" value="1" min="1" style="width: 70px;">
-                                    </td>
-                                    <td class="row-total">£29.95</td>
-                                    <td>
-<<<<<<< HEAD
-                                        <button class="btn btn-danger btn-sm" onclick="removeFromCart()">
-=======
-                                        <button class="btn btn-danger btn-sm delete-btn" onclick="deleteItem()">
->>>>>>> 78eec747ab66a00dc3f3b736da941df3668a54e8
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+            <div class="col">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th>Total</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="cart-items">
+                        <tr>
+                            <td>Sky Remote Control</td>
+                            <td>£29.50</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <input type="number" class="form-control me-2" value="1" min="1" style="width: 70px;">
+                                    <button class="btn btn-primary btn-sm update-cart d-none">
+                                        Update
+                                    </button>
+                                </div>
+                            </td>
+                            <td>£29.50</td>
+                            <td>
+                                <button class="btn btn-danger btn-sm" onclick="removeFromCart()">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
+        </div>
 
-            <div class="col-md-4">
+        <div class="row">
+            <div class="col-md-6 offset-md-6">
                 <div class="card">
                     <div class="card-body">
-                        <h3>Order Summary</h3>
-                        <div class="d-flex justify-content-between mb-2">
+                        <h5>Order Summary</h5>
+                        <div class="d-flex justify-content-between mb-3">
                             <span>Subtotal:</span>
-                            <span id="subtotal">£29.95</span>
+                            <span data-subtotal>£29.50</span>
                         </div>
                         <div class="d-flex justify-content-between mb-3">
                             <span>Shipping:</span>
                             <span>FREE</span>
                         </div>
-                        <hr>
                         <div class="d-flex justify-content-between mb-3">
                             <strong>Total:</strong>
-                            <strong id="total">£29.95</strong>
+                            <strong data-total>£29.50</strong>
                         </div>
-                        <a href="{{ url_for('checkout') }}" class="btn btn-primary btn-lg w-100">
+                        <button class="btn btn-primary w-100 mt-3" onclick="window.location.href='/checkout'">
                             Proceed to Checkout
-                        </a>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -78,75 +76,99 @@
 </div>
 
 <script>
-function deleteItem() {
-    console.log('Deleting item from cart');
+function removeFromCart() {
+    // Clear the cart from localStorage
     localStorage.removeItem('cart');
-    updateCart();
-}
-
-function updateCart() {
-    const cart = JSON.parse(localStorage.getItem('cart')) || { items: [], total: 0 };
+    
+    // Update cart badge to 0
+    const cartBadge = document.querySelector('.cart-badge');
+    if (cartBadge) {
+        cartBadge.textContent = '0';
+    }
+    
+    // Show empty cart message
     const cartContent = document.getElementById('cart-content');
     const cartEmpty = document.getElementById('cart-empty');
-    const cartCount = document.getElementById('cart-count');
-    
-    if (cart.items.length === 0) {
+    if (cartContent && cartEmpty) {
         cartContent.classList.add('d-none');
         cartEmpty.classList.remove('d-none');
-        cartCount.textContent = '0';
-        return;
+    } else {
+        // If elements not found, just refresh the page
+        window.location.reload();
+    }
+}
+
+// Function to update cart display from localStorage
+function updateCartDisplay() {
+    const cart = JSON.parse(localStorage.getItem('cart')) || { 
+        items: [{ name: 'Sky Remote Control', price: 29.50, quantity: 1 }], 
+        total: 29.50 
+    };
+    
+    // Update quantity input
+    const quantityInput = document.querySelector('input[type="number"]');
+    if (quantityInput && cart.items[0]) {
+        quantityInput.value = cart.items[0].quantity;
     }
     
-    cartContent.classList.remove('d-none');
-    cartEmpty.classList.add('d-none');
-    
-    const quantity = cart.items[0].quantity || 1;
-    const unitPrice = 29.95;
-    const total = (quantity * unitPrice).toFixed(2);
-    
-    // Update quantity input and row total
-    const quantityInput = document.querySelector('.quantity-input');
-    const rowTotalSpan = document.querySelector('.row-total');
-    if (quantityInput) quantityInput.value = quantity;
-    if (rowTotalSpan) rowTotalSpan.textContent = `£${total}`;
-    
-    // Update cart count
-    cartCount.textContent = quantity;
+    // Update row total
+    const rowTotal = document.querySelector('td:nth-last-child(2)');
+    if (rowTotal && cart.items[0]) {
+        rowTotal.textContent = `£${cart.total.toFixed(2)}`;
+    }
     
     // Update order summary
-    document.getElementById('subtotal').textContent = `£${total}`;
-    document.getElementById('total').textContent = `£${total}`;
+    document.querySelector('[data-subtotal]').textContent = `£${cart.total.toFixed(2)}`;
+    document.querySelector('[data-total]').textContent = `£${cart.total.toFixed(2)}`;
 }
 
-<<<<<<< HEAD
-function removeFromCart() {
-    console.log('Removing item from cart...');
-    localStorage.removeItem('cart');
-    updateCart();
-    // Redirect to cart page with empty cart message
-    window.location.reload();
-=======
-function proceedToCheckout() {
-    alert('Checkout functionality coming soon!');
->>>>>>> 78eec747ab66a00dc3f3b736da941df3668a54e8
-}
-
-// Add event listener for quantity changes
-document.addEventListener('DOMContentLoaded', function() {
-    const quantityInput = document.querySelector('.quantity-input');
-    if (quantityInput) {
-        quantityInput.addEventListener('change', function(e) {
-            const cart = JSON.parse(localStorage.getItem('cart')) || { items: [], total: 0 };
-            if (cart.items.length > 0) {
-                cart.items[0].quantity = parseInt(e.target.value);
-                localStorage.setItem('cart', JSON.stringify(cart));
-                updateCart();
-            }
-        });
-    }
-
-    // Initial cart update
-    updateCart();
+// Add event listener to quantity input
+document.querySelector('input[type="number"]').addEventListener('change', function(e) {
+    const quantity = parseInt(e.target.value);
+    const price = 29.50;
+    const total = (quantity * price).toFixed(2);
+    
+    // Update row total
+    e.target.closest('tr').querySelector('td:nth-last-child(2)').textContent = `£${total}`;
+    
+    // Show update button
+    const updateBtn = e.target.nextElementSibling;
+    updateBtn.classList.remove('d-none');
 });
+
+// Add event listener to update button
+document.querySelector('.update-cart').addEventListener('click', function(e) {
+    const row = e.target.closest('tr');
+    const quantity = parseInt(row.querySelector('input[type="number"]').value);
+    const price = 29.50;
+    const total = (quantity * price).toFixed(2);
+    
+    // Update cart in localStorage
+    const cart = {
+        items: [{
+            name: 'Sky Remote Control',
+            price: price,
+            quantity: quantity
+        }],
+        total: parseFloat(total)
+    };
+    localStorage.setItem('cart', JSON.stringify(cart));
+    
+    // Update all totals on page
+    document.querySelector('[data-subtotal]').textContent = `£${total}`;
+    document.querySelector('[data-total]').textContent = `£${total}`;
+    
+    // Hide update button
+    e.target.classList.add('d-none');
+    
+    // Update cart badge
+    const cartBadge = document.querySelector('.cart-badge');
+    if (cartBadge) {
+        cartBadge.textContent = quantity;
+    }
+});
+
+// Call updateCartDisplay on page load
+document.addEventListener('DOMContentLoaded', updateCartDisplay);
 </script>
 {% endblock %} 

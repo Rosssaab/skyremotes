@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}IP Ignore List - Sky Remotes{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>IP Ignore List</h1>
+    
+    <!-- Add New IP Form -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Add IP Address</h5>
+            <form id="addIPForm" class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" id="newIP" placeholder="IP Address" required>
+                </div>
+                <div class="col-md-6">
+                    <input type="text" class="form-control" id="notes" placeholder="Notes (optional)">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Ignored IPs Table -->
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>IP Address</th>
+                    <th>Date Added</th>
+                    <th>Notes</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ip in ignored_ips %}
+                <tr>
+                    <td>{{ ip.ip_address }}</td>
+                    <td>{{ ip.date_added.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>{{ ip.notes }}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger remove-ip" 
+                                data-ip="{{ ip.ip_address }}">
+                            Remove
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, setting up event listeners');
+    
+    // Add click handlers to all remove buttons
+    document.querySelectorAll('.remove-ip').forEach(button => {
+        button.addEventListener('click', function(e) {
+            const ip = this.getAttribute('data-ip');
+            console.log('Remove button clicked for IP:', ip);
+            
+            if (confirm('Are you sure you want to remove IP: ' + ip + ' from the ignore list?')) {
+                console.log('Confirmed removal of IP:', ip);
+                
+                fetch('/remove_from_ignore_list', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ ip_address: ip })
+                })
+                .then(response => {
+                    console.log('Response received:', response);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Data received:', data);
+                    if (data.success) {
+                        alert('Successfully removed IP');
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error occurred: ' + error);
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

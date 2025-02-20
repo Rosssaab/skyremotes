@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /admin_login/
+Disallow: /cart/
+Disallow: /checkout/
+Disallow: /process_order/
+Disallow: /test_payment/
+Disallow: /update_order_status/
+Disallow: /update_order_notes/
+
+# Allow search engines to access sitemap
+Sitemap: https://skyremotes.co.uk/sitemap.xml

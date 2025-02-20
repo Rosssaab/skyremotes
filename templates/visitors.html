@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Site Visitors - Sky Remotes{% endblock %}
+
+{% block head %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Site Visitors</h1>
+    
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <label for="dateFilter" class="form-label">Date</label>
+            <input type="date" class="form-control" id="dateFilter">
+        </div>
+        <div class="col-md-3">
+            <label for="pageFilter" class="form-label">Page</label>
+            <input type="text" class="form-control" id="pageFilter" placeholder="Filter by page">
+        </div>
+        <div class="col-md-3">
+            <label for="ipFilter" class="form-label">IP Address</label>
+            <input type="text" class="form-control" id="ipFilter" placeholder="Filter by IP">
+        </div>
+    </div>
+
+    <!-- Visitors Table -->
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Date/Time</th>
+                    <th>IP Address</th>
+                    <th>Page Visited</th>
+                    <th>User Agent</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for visitor in visitors %}
+                <tr>
+                    <td>{{ visitor.visit_datetime.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>{{ visitor.ip_address }}</td>
+                    <td>{{ visitor.page_visited }}</td>
+                    <td>{{ visitor.user_agent }}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" 
+                                onclick="addToIgnoreList('{{ visitor.ip_address }}')">
+                            Ignore IP
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function addToIgnoreList(ip) {
+    console.log('Adding IP to ignore list:', ip);
+    if (confirm('Add this IP to ignore list?')) {
+        fetch('/add_to_ignore_list', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                ip_address: ip,
+                notes: 'Added from visitors page' 
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error occurred: ' + error);
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const dateFilter = document.getElementById('dateFilter');
+    const pageFilter = document.getElementById('pageFilter');
+    const ipFilter = document.getElementById('ipFilter');
+
+    function filterTable() {
+        const dateValue = dateFilter.value;
+        const pageValue = pageFilter.value.toLowerCase();
+        const ipValue = ipFilter.value.toLowerCase();
+        
+        const rows = document.querySelectorAll('tbody tr');
+        
+        rows.forEach(row => {
+            const date = row.cells[0].textContent.split(' ')[0];
+            const ip = row.cells[1].textContent.toLowerCase();
+            const page = row.cells[2].textContent.toLowerCase();
+            
+            const matchesDate = !dateValue || date === dateValue;
+            const matchesPage = !pageValue || page.includes(pageValue);
+            const matchesIP = !ipValue || ip.includes(ipValue);
+            
+            row.style.display = (matchesDate && matchesPage && matchesIP) ? '' : 'none';
+        });
+    }
+
+    dateFilter.addEventListener('input', filterTable);
+    pageFilter.addEventListener('input', filterTable);
+    ipFilter.addEventListener('input', filterTable);
+});
+</script>
+{% endblock %} 

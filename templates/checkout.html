@@ -57,20 +57,36 @@
                 </div>
             </div>
 
-            <!-- Payment Section -->
             <div class="card">
                 <div class="card-header bg-primary text-white">
                     <h2 class="h5 mb-0"><i class="fas fa-credit-card"></i> Payment Method</h2>
                 </div>
                 <div class="card-body">
-                    <!-- Single Payment Option -->
-                    <div class="mb-4">
-                        <div class="alert alert-info mb-3">
-                            <i class="fas fa-shield-alt me-2"></i>
-                            Secure payment - Pay with PayPal or Card (no PayPal account needed)
-                        </div>
-                        <div id="paypal-button-container"></div>
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Secure payment - Pay with PayPal or Card (no PayPal account needed)
                     </div>
+                    <button onclick="handlePaymentClick()" id="validateAndPay" class="btn" style="
+                        width: 100%;
+                        max-width: 750px;
+                        margin: 0 auto;
+                        display: block;
+                        background-color: #0070ba;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        padding: 10px;
+                        font-size: 1rem;
+                        cursor: pointer;
+                    ">Continue to Payment</button>
+                    <div id="paypal-button-container" style="display: none;"></div>
+
+                    <!-- Add Test Payment Button
+                    <div class="mt-3">
+                        <button id="testPaymentBtn" class="btn btn-warning w-100">
+                            <i class="fas fa-vial"></i> Test Payment
+                        </button>
+                    </div> -->
                 </div>
             </div>
         </div>
@@ -81,19 +97,9 @@
                     <h2 class="h5 mb-0"><i class="fas fa-shopping-cart"></i> Order Summary</h2>
                 </div>
                 <div class="card-body">
-<<<<<<< HEAD
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Sky Remote Control</span>
-                        <button class="btn btn-danger btn-sm" onclick="removeFromCart()">Delete</button>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Subtotal:</span>
-                        <span id="subtotal">£29.95</span>
-=======
                     <div class="d-flex justify-content-between mb-3">
                         <span>Subtotal:</span>
-                        <span id="subtotal">£{{ total }}</span>
->>>>>>> 78eec747ab66a00dc3f3b736da941df3668a54e8
+                        <span id="subtotal">£29.50</span>
                     </div>
                     <div class="d-flex justify-content-between mb-3">
                         <span>Shipping:</span>
@@ -101,11 +107,7 @@
                     </div>
                     <div class="d-flex justify-content-between mb-3">
                         <strong>Total:</strong>
-<<<<<<< HEAD
-                        <strong id="total">£29.95</strong>
-                    </div>
-=======
-                        <strong id="total">£{{ total }}</strong>
+                        <strong id="total">£29.50</strong>
                     </div>
 
                     <!-- PayPal Button Container -->
@@ -115,7 +117,6 @@
                     <button type="button" id="deleteOrderBtn" class="btn btn-danger w-100" onclick="deleteOrder()">
                         <i class="fas fa-trash"></i> Delete Order
                     </button>
->>>>>>> 78eec747ab66a00dc3f3b736da941df3668a54e8
                 </div>
             </div>
 
@@ -133,11 +134,6 @@
     </div>
 </div>
 
-<<<<<<< HEAD
-<!-- PayPal SDK with additional parameters -->
-<script src="https://www.paypal.com/sdk/js?client-id={{ config.PAYPAL_CLIENT_ID }}&currency=GBP&intent=capture"></script>
-
-=======
 <!-- Add this modal HTML at the bottom of your body -->
 <div class="modal fade" id="orderConfirmationModal" tabindex="-1">
     <div class="modal-dialog">
@@ -158,51 +154,94 @@
     </div>
 </div>
 
+<!-- Add this modal HTML just before the closing body tag -->
+<div class="modal fade" id="orderSuccessModal" tabindex="-1" aria-labelledby="orderSuccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="orderSuccessModalLabel">Order Successful!</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Thank you for your order! Please check your email (including junk folder) for order confirmation.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="handleOrderComplete()">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% block extra_js %}
-<script src="https://www.paypal.com/sdk/js?client-id={{ config.PAYPAL_CLIENT_ID }}&currency=GBP"></script>
->>>>>>> 78eec747ab66a00dc3f3b736da941df3668a54e8
 <script>
+// Add this function for the delete order button
 function deleteOrder() {
+    // Clear the cart from localStorage
     localStorage.removeItem('cart');
-    window.location.href = "{{ url_for('cart') }}";
+
+    // Update cart badge to 0
+    const cartBadge = document.querySelector('.cart-badge');
+    if (cartBadge) {
+        cartBadge.textContent = '0';
+    }
+
+    // Redirect to home page
+    window.location.href = "{{ url_for('home') }}";
 }
 
-<<<<<<< HEAD
-    const quantity = cart.items[0].quantity || 1;
-    const total = (quantity * 29.95).toFixed(2);
+// Add this function to update the checkout totals
+function updateCheckoutTotals() {
+    const cart = JSON.parse(localStorage.getItem('cart')) || { total: 29.50 };
+    const total = cart.total.toFixed(2);
 
-    // Update all total displays
+    // Update subtotal and total displays
     document.getElementById('subtotal').textContent = `£${total}`;
     document.getElementById('total').textContent = `£${total}`;
+}
 
+// Call on page load
+document.addEventListener('DOMContentLoaded', updateCheckoutTotals);
+
+function handlePaymentClick() {
+    const form = document.getElementById('shipping-form');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+
+    const validateBtn = document.getElementById('validateAndPay');
+    const paypalContainer = document.getElementById('paypal-button-container');
+
+    validateBtn.style.display = 'none';
+    paypalContainer.style.display = 'block';
+
+    const script = document.createElement('script');
+    script.src = "https://www.paypal.com/sdk/js?client-id={{ config.PAYPAL_CLIENT_ID }}&currency=GBP&disable-funding=card";
+    script.onload = initPayPalButton;
+    document.body.appendChild(script);
+}
+
+function initPayPalButton() {
     paypal.Buttons({
+        style: {
+            layout: 'vertical',
+            color: 'gold',
+            shape: 'rect',
+            label: 'paypal'
+        },
         createOrder: function(data, actions) {
-            console.log('Creating PayPal order...');
-            
-            // Validate form first
-            const form = document.getElementById('shipping-form');
-            if (!form.checkValidity()) {
-                form.reportValidity();
-                return null;
-            }
-
             return actions.order.create({
                 purchase_units: [{
-                    description: 'Sky Remote Control',
+                    description: "Sky Remote Control",
                     amount: {
                         currency_code: 'GBP',
-                        value: total
+                        value: '29.95'
                     }
                 }]
             });
         },
-        
         onApprove: function(data, actions) {
-            console.log('Payment approved, capturing order...');
-            return actions.order.capture().then(function(orderData) {
-                console.log('Order captured:', orderData);
-                
-                // Get shipping details
+            return actions.order.capture().then(function(details) {
                 const shippingDetails = {
                     firstName: document.getElementById('firstName').value,
                     lastName: document.getElementById('lastName').value,
@@ -214,96 +253,94 @@ function deleteOrder() {
                     postcode: document.getElementById('postcode').value
                 };
 
-                // Send order details to server
-                return fetch('/process-order', {
+                return fetch('/process_order', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         orderID: data.orderID,
-                        paypalDetails: orderData,
+                        paypalDetails: details,
                         shippingDetails: shippingDetails,
-                        quantity: quantity,
-                        total: total
+                        total: '29.95'
                     })
                 })
                 .then(response => response.json())
                 .then(function(orderConfirmation) {
                     localStorage.removeItem('cart');
                     window.location.href = "{{ url_for('order_success') }}";
-                })
-                .catch(function(error) {
-                    console.error('Error:', error);
-                    alert('There was a problem processing your order. Please try again.');
                 });
             });
+        },
+        onError: function(err) {
+            console.error('PayPal error:', err);
+            const validateBtn = document.getElementById('validateAndPay');
+            const paypalContainer = document.getElementById('paypal-button-container');
+            validateBtn.style.display = 'block';
+            paypalContainer.style.display = 'none';
+            alert('Payment failed. Please try again.');
         }
     }).render('#paypal-button-container');
-});
-=======
-// PayPal button initialization
-paypal.Buttons({
-    createOrder: function(data, actions) {
-        return actions.order.create({
-            purchase_units: [{
-                amount: {
-                    currency_code: "GBP",
-                    value: "29.95"
-                },
-                description: "Sky Remote Control"
-            }]
-        });
-    },
-    onApprove: function(data, actions) {
-        return actions.order.capture().then(function(details) {
-            const shippingDetails = {
-                firstName: document.getElementById('firstName').value,
-                lastName: document.getElementById('lastName').value,
-                email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value,
-                address: document.getElementById('address').value,
-                city: document.getElementById('city').value,
-                postcode: document.getElementById('postcode').value
-            };
-            
-            return fetch('{{ url_for("process_order") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    orderID: data.orderID,
-                    paypalDetails: details,
-                    shippingDetails: shippingDetails,
-                    total: "29.95"
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    // Show confirmation modal
-                    document.getElementById('orderIdSpan').textContent = data.order_id;
-                    const modal = new bootstrap.Modal(document.getElementById('orderConfirmationModal'));
-                    modal.show();
-                    
-                    // Clear cart
-                    localStorage.removeItem('cart');
-                } else {
-                    throw new Error(data.message || 'Order processing failed');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('There was a problem processing your order: ' + error.message);
-            });
-        });
-    },
-    onError: function(err) {
-        console.error('PayPal Error:', err);
-        alert('PayPal Error: ' + err);
+}
+
+// Add this function for test payment
+function handleTestPayment() {
+    console.log('Test payment button clicked');
+    const form = document.getElementById('shipping-form');
+    if (!form.checkValidity()) {
+        console.log('Form validation failed');
+        form.reportValidity();
+        return;
     }
-}).render('#paypal-button-container');
->>>>>>> 78eec747ab66a00dc3f3b736da941df3668a54e8
+
+    const shippingDetails = {
+        firstName: document.getElementById('firstName').value,
+        lastName: document.getElementById('lastName').value,
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
+        address: document.getElementById('address').value,
+        address2: document.getElementById('address2').value,
+        city: document.getElementById('city').value,
+        postcode: document.getElementById('postcode').value
+    };
+
+    console.log('Shipping details:', shippingDetails);
+
+    fetch('/test_payment', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            shippingDetails: shippingDetails,
+            total: '29.50'
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        console.log('Response result:', result);
+        if (result.success) {
+            // Clear the cart
+            localStorage.removeItem('cart');
+
+            // Show success message
+            alert('Order placed successfully! Check your email for confirmation.');
+
+            // Redirect to success page
+            window.location.href = result.redirect;
+        } else {
+            console.error('Payment failed:', result.error);
+            alert('Payment failed: ' + result.error);
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        alert('Payment failed. Please try again.');
+    });
+}
+
+// Add click handler to test payment button
+document.getElementById('testPaymentBtn').addEventListener('click', handleTestPayment);
 </script>
-{% endblock %} 
+{% endblock %}
+{% endblock %}

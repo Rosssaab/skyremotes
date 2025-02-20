@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Status Colors Test - Sky Remotes{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Status Colors Reference</h1>
+    <div class="card">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <span class="badge bg-warning fs-5 d-block p-2">Pending</span>
+                </div>
+                <div class="col-md-3">
+                    <span class="badge bg-purple fs-5 d-block p-2">Payment Confirmed</span>
+                </div>
+                <div class="col-md-3">
+                    <span class="badge bg-primary fs-5 d-block p-2">Processing</span>
+                </div>
+                <div class="col-md-3">
+                    <span class="badge bg-info fs-5 d-block p-2">Ready for Dispatch</span>
+                </div>
+                <div class="col-md-3">
+                    <span class="badge bg-success fs-5 d-block p-2">Shipped</span>
+                </div>
+                <div class="col-md-3">
+                    <span class="badge bg-indigo fs-5 d-block p-2">Delivered</span>
+                </div>
+                <div class="col-md-3">
+                    <span class="badge bg-danger fs-5 d-block p-2">Cancelled</span>
+                </div>
+                <div class="col-md-3">
+                    <span class="badge bg-brown fs-5 d-block p-2">Refunded</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .bg-purple {
+            background-color: #6f42c1 !important;
+        }
+        .bg-indigo {
+            background-color: #4b0082 !important;
+        }
+        .bg-brown {
+            background-color: #8B4513 !important;
+        }
+    </style>
+
+    <div class="mt-4">
+        <h2>Color Classes Used:</h2>
+        <ul>
+            <li>Pending: <code>bg-warning</code> (orange-yellow)</li>
+            <li>Payment Confirmed: <code>bg-purple</code> (purple)</li>
+            <li>Processing: <code>bg-primary</code> (blue)</li>
+            <li>Ready for Dispatch: <code>bg-info</code> (light blue)</li>
+            <li>Shipped: <code>bg-success</code> (green)</li>
+            <li>Delivered: <code>bg-indigo</code> (deep indigo)</li>
+            <li>Cancelled: <code>bg-danger</code> (red)</li>
+            <li>Refunded: <code>bg-brown</code> (saddle brown)</li>
+        </ul>
+    </div>
+</div>
+{% endblock %} 

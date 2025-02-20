@@ -1,0 +1,476 @@
+{% extends "base.html" %}
+
+{% block title %}Order Details - Sky Remotes{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Order Details</h1>
+        <div>
+            <button type="button" class="btn btn-primary me-2" onclick="openInvoiceModal()">
+                <i class="fas fa-print"></i> Print Invoice
+            </button>
+            <a href="{{ url_for('orders') }}" class="btn btn-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Back to Orders
+            </a>
+            <a href="{{ url_for('admin_logout') }}" class="btn btn-danger">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Customer Information</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Name:</strong> {{ order.customer_name }}</p>
+                    <p><strong>Email:</strong> {{ order.customer_email }}</p>
+                    <p><strong>Address:</strong> {{ order.customer_address }}</p>
+                    <p><strong>City:</strong> {{ order.customer_city }}</p>
+                    <p><strong>Postcode:</strong> {{ order.customer_postcode }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Order Information</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Order ID:</strong> {{ order.id }}</p>
+                    <p><strong>Date:</strong> {{ order.date.strftime('%d-%m-%Y %H:%M') }}</p>
+                    <p><strong>Total:</strong> £{{ "%.2f"|format(order.total) }}</p>
+                    <p><strong>PayPal ID:</strong> {{ order.paypal_id or 'N/A' }}</p>
+                    <div class="mb-3">
+                        <strong>Status:</strong>
+                        <div class="mt-2">
+                            <span class="badge fs-5 {% if order.status == 'Pending' %}bg-warning
+                                                  {% elif order.status == 'Payment Confirmed' %}bg-purple
+                                                  {% elif order.status == 'Processing' %}bg-primary
+                                                  {% elif order.status == 'Ready for Dispatch' %}bg-info
+                                                  {% elif order.status == 'Shipped' %}bg-success
+                                                  {% elif order.status == 'Delivered' %}bg-indigo
+                                                  {% elif order.status == 'Cancelled' %}bg-danger
+                                                  {% elif order.status == 'Refunded' %}bg-brown
+                                                  {% else %}bg-primary{% endif %}">
+                                {{ order.status }}
+                            </span>
+                        </div>
+                        <select class="form-select mt-2" id="statusSelect" onchange="updateStatus(this.value)">
+                            {% for status in statuses %}
+                            <option value="{{ status.id }}" {% if status.id == order.status_id %}selected{% endif %}>
+                                {{ status.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Notes:</strong>
+                        <div class="mt-2 p-3 border rounded bg-white notes-display" role="button" onclick="openNotesModal()">
+                            {%- if order.notes -%}
+                                {{- order.notes.strip() -}}
+                            {%- else -%}
+                                Click to add notes...
+                            {%- endif -%}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Order Items</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>{{ item.product_name }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>£{{ "%.2f"|format(item.unit_price) }}</td>
+                            <td>£{{ "%.2f"|format(item.total_price) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Status Update Confirmation Modal -->
+    <div class="modal fade" id="confirmStatusModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Status Update</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to update the order status to:</p>
+                    <p class="text-center">
+                        <span id="newStatusName" class="badge fs-5"></span>
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmStatusUpdate()">Update Status</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Notes Edit Modal -->
+    <div class="modal fade" id="notesModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Order Notes</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea class="form-control" id="orderNotes" rows="5">{{ order.notes or '' }}</textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveNotes()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Invoice Print Modal -->
+    <div class="modal fade" id="invoicePrintModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Invoice Preview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="invoiceContent">
+                        Loading...
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="printInvoice()">Print</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print content with debug border -->
+<div class="print-only">
+    <!-- Company Header -->
+    <div class="text-center mb-3">
+        <h2>Sky Remotes</h2>
+        <p class="mb-0">Your source for premium Sky Remotes in the UK</p>
+        <p class="mb-0">Email: info@skyremotes.co.uk</p>
+        <p>Helpline: +44 7737 463348</p>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="row">
+        <div class="col-6">
+            <h4>Invoice Details</h4>
+            <p>Order ID: {{ order.id }}<br>
+            Date: {{ order.date.strftime('%d-%m-%Y %H:%M') }}<br>
+            PayPal ID: {{ order.paypal_id or 'N/A' }}</p>
+        </div>
+        <div class="col-6">
+            <h4>Customer Details</h4>
+            <p>{{ order.customer_name }}<br>
+            {{ order.customer_email }}</p>
+        </div>
+    </div>
+
+    <!-- Order Items Table -->
+    <table class="table table-bordered mb-3" style="width: 100%;">
+        <tr>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>Unit Price</th>
+            <th>Total</th>
+        </tr>
+        {% for item in items %}
+        <tr>
+            <td>{{ item.product_name }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>£{{ "%.2f"|format(item.unit_price) }}</td>
+            <td>£{{ "%.2f"|format(item.total_price) }}</td>
+        </tr>
+        {% endfor %}
+        <tr>
+            <td colspan="3" style="text-align: right;"><strong>Total:</strong></td>
+            <td>£{{ "%.2f"|format(order.total) }}</td>
+        </tr>
+    </table>
+
+    <!-- Delivery Label -->
+    <div style="border: 2px dashed #000; padding: 15px; text-align: center; margin-top: 20px;">
+        <h3 style="margin: 0 0 10px 0;">Delivery Label</h3>
+        <p style="font-size: 14pt; margin: 0;">
+            {{ order.customer_name }}<br>
+            {{ order.customer_address }}<br>
+            {{ order.customer_city }}<br>
+            {{ order.customer_postcode }}
+        </p>
+    </div>
+</div>
+
+<style>
+    @media screen {
+        .print-only {
+            display: none;
+        }
+    }
+
+    @media print {
+        /* Hide screen elements */
+        body > *:not(.print-only) {
+            display: none;
+        }
+        
+        /* Show print content */
+        .print-only {
+            display: block;
+            padding: 20px;
+        }
+
+        /* Compact spacing */
+        h2, h3, h4 {
+            margin-bottom: 8px;
+        }
+        
+        p {
+            margin-bottom: 4px;
+        }
+
+        /* Table styling */
+        table {
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+        }
+
+        /* Force single page */
+        @page {
+            margin: 0.5cm;
+            size: A4;
+        }
+    }
+</style>
+
+<script>
+let selectedStatus = null;
+
+// When status dropdown changes
+document.getElementById('statusSelect').addEventListener('change', function() {
+    selectedStatus = this.value;
+    const statusName = this.options[this.selectedIndex].text;
+    const statusBadge = document.getElementById('newStatusName');
+    statusBadge.textContent = statusName;
+    
+    // Set badge color based on status
+    statusBadge.className = 'badge fs-5 ';  // Reset class and add font-size
+    switch(statusName.toLowerCase()) {
+        case 'pending':
+            statusBadge.className += 'bg-warning';
+            break;
+        case 'payment confirmed':
+            statusBadge.className += 'bg-purple';
+            break;
+        case 'processing':
+            statusBadge.className += 'bg-primary';
+            break;
+        case 'ready for dispatch':
+            statusBadge.className += 'bg-info';
+            break;
+        case 'shipped':
+            statusBadge.className += 'bg-success';
+            break;
+        case 'delivered':
+            statusBadge.className += 'bg-indigo';
+            break;
+        case 'cancelled':
+            statusBadge.className += 'bg-danger';
+            break;
+        case 'refunded':
+            statusBadge.className += 'bg-brown';
+            break;
+        default:
+            statusBadge.className += 'bg-primary';
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('confirmStatusModal'));
+    modal.show();
+});
+
+function confirmStatusUpdate() {
+    if (!selectedStatus) return;
+    
+    fetch('/update_order_status', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            order_id: {{ order.id }},
+            status_id: selectedStatus
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            location.reload();
+        } else {
+            alert('Error updating status: ' + result.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating status');
+    });
+}
+
+function openNotesModal() {
+    const modal = new bootstrap.Modal(document.getElementById('notesModal'));
+    modal.show();
+}
+
+function saveNotes() {
+    const notes = document.getElementById('orderNotes').value;
+    
+    fetch('/update_order_notes', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            order_id: {{ order.id }},
+            notes: notes
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            location.reload();
+        } else {
+            alert('Error updating notes: ' + result.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating notes');
+    });
+}
+
+// Add the custom color classes
+const style = document.createElement('style');
+style.textContent = `
+    .bg-purple {
+        background-color: #6f42c1 !important;
+        color: white !important;
+    }
+    .bg-indigo {
+        background-color: #4b0082 !important;
+        color: white !important;
+    }
+    .bg-brown {
+        background-color: #8B4513 !important;
+        color: white !important;
+    }
+    /* Ensure text is visible on warning background */
+    .bg-warning {
+        color: #000 !important;
+    }
+    /* Ensure text is visible on all other backgrounds */
+    .bg-primary, .bg-info, .bg-success, .bg-danger {
+        color: white !important;
+    }
+    /* Update the notes styling */
+    .notes-display {
+        cursor: pointer;
+        color: #333;
+        min-height: 45px;
+        border: 1px solid #dee2e6 !important;
+        white-space: pre-line;  /* Changed from pre-wrap to pre-line */
+        word-wrap: break-word;
+    }
+    .notes-display:hover {
+        background-color: #f8f9fa !important;
+        border-color: #ced4da !important;
+    }
+    .notes-display:empty::after {
+        content: 'Click to add notes...';
+        color: #6c757d;
+        font-style: italic;
+    }
+`;
+document.head.appendChild(style);
+
+// Add debug logging for print event
+window.onbeforeprint = function() {
+    console.log('Print dialog opened');
+};
+
+window.onafterprint = function() {
+    console.log('Print completed or cancelled');
+};
+
+function openInvoiceModal() {
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('invoicePrintModal'));
+    modal.show();
+    
+    // Load invoice content
+    fetch(`/invoice_print/{{ order.id }}`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('invoiceContent').innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('invoiceContent').innerHTML = 'Error loading invoice';
+        });
+}
+
+function printInvoice() {
+    const printContent = document.getElementById('invoiceContent');
+    const originalContent = document.body.innerHTML;
+    
+    // Replace page content with invoice content
+    document.body.innerHTML = printContent.innerHTML;
+    
+    // Print
+    window.print();
+    
+    // Restore original content
+    document.body.innerHTML = originalContent;
+    
+    // Reinitialize Bootstrap modal and other scripts
+    location.reload();
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,168 @@
+<div class="invoice-container">
+    <div class="header">
+        <h2 style="color: black;">Sky Remotes</h2>
+        <p style="color: black;">Your source for premium Sky Remotes in the UK</p>
+        <p style="color: black;">Email: info@skyremotes.co.uk</p>
+        <p style="color: black;">Helpline: +44 7737 463348</p>
+    </div>
+
+    <div class="details-section">
+        <div class="invoice-details">
+            <h3 style="color: black;">Invoice Details</h3>
+            <p style="color: black;">Order ID: {{ order.id }}</p>
+            <p style="color: black;">Date: {{ order.date.strftime('%d-%m-%Y %H:%M') }}</p>
+            <p style="color: black;">PayPal ID: {{ order.paypal_id or 'N/A' }}</p>
+        </div>
+
+        <div class="customer-details">
+            <h3 style="color: black;">Customer Details</h3>
+            <p style="color: black;">{{ order.customer_name }}</p>
+            <p style="color: black;">{{ order.customer_email }}</p>
+        </div>
+    </div>
+
+    <div class="order-items">
+        <h3 style="color: black;">Order Items</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th style="color: black;">Product</th>
+                    <th style="color: black;">Quantity</th>
+                    <th style="color: black;">Unit Price</th>
+                    <th style="color: black;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td style="color: black;">{{ item.product_name }}</td>
+                    <td style="color: black;">{{ item.quantity }}</td>
+                    <td style="color: black;">£{{ "%.2f"|format(item.unit_price) }}</td>
+                    <td style="color: black;">£{{ "%.2f"|format(item.total_price) }}</td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td colspan="3" style="text-align: right; color: black;"><strong>Total:</strong></td>
+                    <td style="color: black;"><strong>£{{ "%.2f"|format(order.total) }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="delivery-label">
+        <h3 style="color: black;">Delivery Label</h3>
+        <div class="label-content">
+            <p style="color: black; font-size: 18px; font-weight: bold;">{{ order.customer_name }}</p>
+            <p style="color: black; font-size: 18px; font-weight: bold;">{{ order.customer_address }}</p>
+            <p style="color: black; font-size: 18px; font-weight: bold;">{{ order.customer_city }}</p>
+            <p style="color: black; font-size: 18px; font-weight: bold;">{{ order.customer_postcode }}</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .invoice-container {
+        background: white;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+        line-height: 1.4;
+        color: black;
+    }
+
+    .header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .header h2 {
+        margin: 0;
+        font-size: 24px;
+    }
+
+    .header p {
+        margin: 5px 0;
+    }
+
+    .details-section {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+
+    .invoice-details, .customer-details {
+        flex: 1;
+    }
+
+    h3 {
+        margin: 0 0 10px 0;
+        font-size: 16px;
+        font-weight: bold;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+
+    th, td {
+        border: 1px solid #000;
+        padding: 8px;
+        text-align: left;
+    }
+
+    th {
+        background-color: #fff;
+    }
+
+    .delivery-label {
+        border: 1px dashed #000;
+        padding: 10px;
+        margin-top: 20px;
+    }
+
+    .label-content {
+        margin: 0;
+    }
+
+    .label-content p {
+        margin: 5px 0;
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    /* Print styles */
+    @page {
+        margin: 0;
+        size: auto;
+    }
+
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        
+        .invoice-container,
+        .invoice-container * {
+            visibility: visible;
+            color: black !important;
+        }
+        
+        .invoice-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* Hide browser's default headers and footers */
+        html, body {
+            height: 99%;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden;
+        }
+    }
+</style> 

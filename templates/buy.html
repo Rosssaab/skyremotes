@@ -5,13 +5,19 @@
 {% block content %}
 <div class="container mt-4">
     <div class="row">
+        <div class="d-flex justify-content-between mb-4">
+            <button onclick="addToCart()" class="btn btn-primary">
+                <i class="fas fa-shopping-cart"></i> Add to Cart
+            </button>
+            <button onclick="addToCart()" class="btn btn-primary">
+                <i class="fas fa-shopping-cart"></i> Add to Cart
+            </button>
+        </div>
+
         <div class="col-md-6">
             <div class="card mb-4">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <div class="card-header bg-primary text-white">
                     <h2 class="h5 mb-0">Sky Remote Control</h2>
-                    <button class="btn btn-warning btn-lg" onclick="addToCart()">
-                        Add to Cart - £29.95
-                    </button>
                 </div>
                 <div class="card-body">
                     <div class="text-center mb-4">
@@ -20,6 +26,7 @@
                              class="img-fluid rounded shadow" 
                              style="max-height: 300px;">
                     </div>
+                    <h3 class="h4 mb-3">£29.50</h3>
                     <p><strong>Features:</strong></p>
                     <ul>
                         <li>100% Genuine Sky Remote</li>
@@ -42,12 +49,7 @@
                     <p>This is an official Sky remote control, sourced directly from Sky's approved suppliers. It's perfect for replacing a lost, broken or damaged Sky remote.</p>
                     
                     <h4 class="h5 mt-4">Compatibility</h4>
-                    <p>Works with all Sky boxes including:</p>
-                    <ul>
-                        <li>Sky+</li>
-                        <li>Sky+ HD</li>
-                        <li>Sky Q</li>
-                    </ul>
+                    <p>Works with all Sky Q Boxes</p>
 
                     <h4 class="h5 mt-4">What's Included</h4>
                     <ul>
@@ -60,7 +62,6 @@
                     <ul>
                         <li>Free UK Delivery</li>
                         <li>Orders before 1PM ship same day</li>
-                        <li>Royal Mail First Class</li>
                     </ul>
                 </div>
             </div>
@@ -76,10 +77,10 @@ function addToCart() {
     // Add item
     cart.items = [{
         name: 'Sky Remote Control',
-        price: 29.95,
+        price: 29.50,
         quantity: 1
     }];
-    cart.total = 29.95;
+    cart.total = 29.50;
     
     // Save to localStorage
     localStorage.setItem('cart', JSON.stringify(cart));
