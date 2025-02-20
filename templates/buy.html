@@ -1,60 +1,67 @@
 {% extends "base.html" %}
 
-{% block title %}Buy Sky Remote{% endblock %}
+{% block title %}Order{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
     <div class="row">
         <div class="col-md-6">
-            <img src="{{ url_for('static', filename='images/SkyRemote.png') }}" 
-                 alt="Sky Remote Control" 
-                 class="img-fluid rounded shadow">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h2 class="h5 mb-0">Sky Remote Control</h2>
+                    <button class="btn btn-warning btn-lg" onclick="addToCart()">
+                        Add to Cart - £29.95
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <img src="{{ url_for('static', filename='images/SkyRemote.png') }}" 
+                             alt="Sky Remote" 
+                             class="img-fluid rounded shadow" 
+                             style="max-height: 300px;">
+                    </div>
+                    <p><strong>Features:</strong></p>
+                    <ul>
+                        <li>100% Genuine Sky Remote</li>
+                        <li>Full Compatibility</li>
+                        <li>All Functions Work</li>
+                        <li>12-Month Warranty</li>
+                        <li>Free UK Delivery</li>
+                    </ul>
+                </div>
+            </div>
         </div>
+
         <div class="col-md-6">
-            <h1>Sky Remote Control</h1>
-            <h2 class="text-primary mb-4">£29.95</h2>
-            
-            <div class="mb-4">
-                <h3>Product Features:</h3>
-                <ul>
-                    <li>✓ 100% Original Sky Equipment</li>
-                    <li>✓ Full Compatibility Guaranteed</li>
-                    <li>✓ All Functions Work Perfectly</li>
-                    <li>✓ 12-Month Warranty</li>
-                </ul>
-            </div>
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="h5 mb-0">Product Information</h2>
+                </div>
+                <div class="card-body">
+                    <h3 class="h5">Genuine Sky Remote Control</h3>
+                    <p>This is an official Sky remote control, sourced directly from Sky's approved suppliers. It's perfect for replacing a lost, broken or damaged Sky remote.</p>
+                    
+                    <h4 class="h5 mt-4">Compatibility</h4>
+                    <p>Works with all Sky boxes including:</p>
+                    <ul>
+                        <li>Sky+</li>
+                        <li>Sky+ HD</li>
+                        <li>Sky Q</li>
+                    </ul>
 
-            <div class="alert alert-success mb-4">
-                <h4 class="h5">Bulk Order Discounts Available!</h4>
-                <ul class="mb-0">
-                    <li>Buy 2 remotes - Save 10%</li>
-                    <li>Buy 3 remotes - Save 15%</li>
-                    <li>Buy 4+ remotes - Save 20%</li>
-                </ul>
-            </div>
+                    <h4 class="h5 mt-4">What's Included</h4>
+                    <ul>
+                        <li>1x Sky Remote Control</li>
+                        <li>Batteries Included</li>
+                        <li>Setup Instructions</li>
+                    </ul>
 
-            <form id="addToCartForm" class="mb-4">
-                <button type="submit" class="btn btn-primary btn-lg">Add to Cart</button>
-            </form>
-
-            <div class="alert alert-info">
-                <i class="fas fa-truck"></i> Free UK Delivery
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Success Modal -->
-<div class="modal fade" id="successModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-body text-center p-4">
-                <i class="fas fa-check-circle text-success mb-3" style="font-size: 3rem;"></i>
-                <h4>Added to cart successfully!</h4>
-                <p>Your Sky Remote has been added to your cart.</p>
-                <div class="mt-4">
-                    <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Continue Shopping</button>
-                    <a href="{{ url_for('cart') }}" class="btn btn-primary">View Cart</a>
+                    <h4 class="h5 mt-4">Delivery</h4>
+                    <ul>
+                        <li>Free UK Delivery</li>
+                        <li>Orders before 1PM ship same day</li>
+                        <li>Royal Mail First Class</li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -62,45 +69,29 @@
 </div>
 
 <script>
-document.getElementById('addToCartForm').addEventListener('submit', function(e) {
-    e.preventDefault();
+function addToCart() {
+    // Get existing cart or create new one
+    let cart = JSON.parse(localStorage.getItem('cart')) || { items: [], total: 0 };
     
-    // Get existing cart data from localStorage
-    let cart = JSON.parse(localStorage.getItem('cart')) || {
-        items: [],
-        total: 0
-    };
-    
-    // Add or update cart with quantity of 1
+    // Add item
     cart.items = [{
         name: 'Sky Remote Control',
         price: 29.95,
         quantity: 1
     }];
-    cart.total = (29.95).toFixed(2);
+    cart.total = 29.95;
     
     // Save to localStorage
     localStorage.setItem('cart', JSON.stringify(cart));
     
-    // Update cart count
-    document.getElementById('cart-count').textContent = 1;
-    
-    // Show success modal
-    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-    successModal.show();
-    
-    // Auto hide after 5 seconds
-    setTimeout(() => {
-        successModal.hide();
-    }, 5000);
-});
-
-// Load cart count on page load
-document.addEventListener('DOMContentLoaded', function() {
-    const cart = JSON.parse(localStorage.getItem('cart')) || { items: [] };
-    if (cart.items.length > 0) {
-        document.getElementById('cart-count').textContent = cart.items[0].quantity;
+    // Update cart badge
+    const cartBadge = document.querySelector('.cart-badge');
+    if (cartBadge) {
+        cartBadge.textContent = '1';
     }
-});
+    
+    // Redirect to cart
+    window.location.href = "{{ url_for('cart') }}";
+}
 </script>
 {% endblock %} 

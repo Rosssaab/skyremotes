@@ -26,17 +26,84 @@ app.config.from_object(Config)
 csrf = CSRFProtect(app)
 mail = Mail(app)
 
-# PayPal configuration
-paypalrestsdk.configure({
-    "mode": app.config['PAYPAL_MODE'],
-    "client_id": app.config['PAYPAL_CLIENT_ID'],
-    "client_secret": app.config['PAYPAL_CLIENT_SECRET']
-})
+# Exempt the process-order route from CSRF
+@csrf.exempt
+@app.route('/process_order', methods=['POST'])
+def process_order():
+    try:
+        data = request.json
+        logger.debug(f'Processing order: {data}')
+        
+        # Convert string total to float
+        total = float(data['total'])
 
-# Add the nl2br filter
-@app.template_filter('nl2br')
-def nl2br(value):
-    return jinja2.utils.markupsafe.Markup(value.replace('\n', '<br>'))
+        # Create order object with all required fields
+        order = {
+            'id': str(uuid.uuid4())[:8].upper(),
+            'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'shipping': data['shippingDetails'],
+            'paypal': data['paypalDetails'],
+            'total': total,
+            'subtotal': total,
+            'shipping_cost': 'FREE',
+            'items': [{
+                'name': 'Sky Remote Control',
+                'quantity': 1,
+                'price': total,
+                'total': total
+            }],
+            'customer': {
+                'name': f"{data['shippingDetails']['firstName']} {data['shippingDetails']['lastName']}",
+                'email': data['shippingDetails']['email'],
+                'phone': data['shippingDetails']['phone'],
+                'address': {
+                    'line1': data['shippingDetails']['address'],
+                    'city': data['shippingDetails']['city'],
+                    'postcode': data['shippingDetails']['postcode']
+                }
+            }
+        }
+
+        # Calculate estimated delivery
+        now = datetime.now()
+        order['estimated_delivery'] = (now + timedelta(days=1)).strftime('%A, %B %d') if now.hour < 13 else (now + timedelta(days=2)).strftime('%A, %B %d')
+
+        try:
+            # Send customer email
+            customer_email = Message(
+                subject=f'Order Confirmation - Sky Remotes #{order["id"]}',
+                sender=app.config['MAIL_DEFAULT_SENDER'],
+                recipients=[order['customer']['email']],
+                html=render_template('emails/order_confirmation.html', order=order)
+            )
+            mail.send(customer_email)
+            logger.debug(f'Sent confirmation email to customer: {order["customer"]["email"]}')
+
+            # Send admin email using the same template but with customer email in subject
+            admin_email = Message(
+                subject=f'New Order #{order["id"]} from {order["customer"]["email"]} - Sky Remotes',
+                sender=app.config['MAIL_DEFAULT_SENDER'],
+                recipients=[app.config['MAIL_DEFAULT_SENDER']],
+                html=render_template('emails/order_confirmation.html', order=order)
+            )
+            mail.send(admin_email)
+            logger.debug('Sent notification email to admin')
+
+        except Exception as e:
+            logger.error(f'Email sending error: {str(e)}')
+            # Continue processing even if email fails
+
+        return jsonify({
+            'status': 'success',
+            'order_id': order['id']
+        })
+
+    except Exception as e:
+        logger.error(f'Order processing error: {str(e)}')
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 @app.route('/')
 @app.route('/home')
@@ -140,6 +207,7 @@ def checkout():
 def help():
     return render_template('help.html')
 
+<<<<<<< HEAD
 @csrf.exempt
 @app.route('/process-order', methods=['POST'])
 def process_order():
@@ -215,6 +283,8 @@ def process_order():
             'message': str(e)
         }), 500
 
+=======
+>>>>>>> 78eec747ab66a00dc3f3b736da941df3668a54e8
 @app.route('/order-success')
 def order_success():
     order = session.get('last_order')

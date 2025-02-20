@@ -16,6 +16,7 @@
             <p>Thank you for your order!</p>
         </div>
 
+<<<<<<< HEAD
         <div class="order-details">
             <h2>Order Details</h2>
             <p>Order ID: {{ order.id }}</p>
@@ -28,6 +29,32 @@
                 {% if order.shipping.address2 %}{{ order.shipping.address2 }}<br>{% endif %}
                 {{ order.shipping.city }}<br>
                 {{ order.shipping.postcode }}
+=======
+        <p>Dear {{ order.customer.name }},</p>
+        
+        <p>Thank you for shopping with Sky Remotes. We're processing your order and will ship it soon.</p>
+
+        <div class="order-details">
+            <h2>Order Summary</h2>
+            <p>Sky Remote Control × 1</p>
+            <p>Subtotal: £{{ "%.2f"|format(order.subtotal) }}</p>
+            <p>Shipping: FREE</p>
+            <p><strong>Total: £{{ "%.2f"|format(order.total) }}</strong></p>
+
+            <h2>Customer Details</h2>
+            <p>
+                <strong>Name:</strong> {{ order.customer.name }}<br>
+                <strong>Email:</strong> {{ order.customer.email }}<br>
+                <strong>Phone:</strong> {{ order.customer.phone }}
+            </p>
+
+            <h2>Shipping Address</h2>
+            <p>
+                {{ order.customer.name }}<br>
+                {{ order.customer.address.line1 }}<br>
+                {{ order.customer.address.city }}<br>
+                {{ order.customer.address.postcode }}
+>>>>>>> 78eec747ab66a00dc3f3b736da941df3668a54e8
             </p>
 
             <h3>Order Summary:</h3>

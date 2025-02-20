@@ -30,7 +30,11 @@
                                     </td>
                                     <td class="row-total">£29.95</td>
                                     <td>
+<<<<<<< HEAD
                                         <button class="btn btn-danger btn-sm" onclick="removeFromCart()">
+=======
+                                        <button class="btn btn-danger btn-sm delete-btn" onclick="deleteItem()">
+>>>>>>> 78eec747ab66a00dc3f3b736da941df3668a54e8
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </td>
@@ -74,6 +78,12 @@
 </div>
 
 <script>
+function deleteItem() {
+    console.log('Deleting item from cart');
+    localStorage.removeItem('cart');
+    updateCart();
+}
+
 function updateCart() {
     const cart = JSON.parse(localStorage.getItem('cart')) || { items: [], total: 0 };
     const cartContent = document.getElementById('cart-content');
@@ -108,12 +118,17 @@ function updateCart() {
     document.getElementById('total').textContent = `£${total}`;
 }
 
+<<<<<<< HEAD
 function removeFromCart() {
     console.log('Removing item from cart...');
     localStorage.removeItem('cart');
     updateCart();
     // Redirect to cart page with empty cart message
     window.location.reload();
+=======
+function proceedToCheckout() {
+    alert('Checkout functionality coming soon!');
+>>>>>>> 78eec747ab66a00dc3f3b736da941df3668a54e8
 }
 
 // Add event listener for quantity changes
