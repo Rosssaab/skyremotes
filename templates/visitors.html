@@ -34,7 +34,7 @@
                     <th>Date/Time</th>
                     <th>IP Address</th>
                     <th>Page Visited</th>
-                    <th>User Agent</th>
+                    <th>Location</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -44,10 +44,18 @@
                     <td>{{ visitor.visit_datetime.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                     <td>{{ visitor.ip_address }}</td>
                     <td>{{ visitor.page_visited }}</td>
-                    <td>{{ visitor.user_agent }}</td>
                     <td>
-                        <button class="btn btn-sm btn-danger" 
-                                onclick="addToIgnoreList('{{ visitor.ip_address }}')">
+                        {% if visitor.location %}
+                            {{ visitor.location.city }}{% if visitor.location.city and visitor.location.region %}, {% endif %}
+                            {{ visitor.location.region }}{% if visitor.location.region and visitor.location.country %}, {% endif %}
+                            {{ visitor.location.country }}
+                        {% else %}
+                            Unknown
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-danger remove-ip" 
+                                data-ip="{{ visitor.ip_address }}">
                             Ignore IP
                         </button>
                     </td>

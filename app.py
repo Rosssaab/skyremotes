@@ -15,6 +15,7 @@ import pyodbc
 from utils.order_processor import process_new_order
 from functools import wraps
 from werkzeug.security import check_password_hash, generate_password_hash
+import requests
 
 # Set up logging with more detail
 logging.basicConfig(
@@ -667,36 +668,20 @@ def visitors():
         conn = pyodbc.connect(f'DRIVER={{SQL Server}};SERVER={app.config["DB_SERVER"]};DATABASE={app.config["DB_NAME"]};UID={app.config["DB_USER"]};PWD={app.config["DB_PASSWORD"]}')
         cursor = conn.cursor()
         
-        # Get filters from query parameters
-        date_filter = request.args.get('date', '')
-        page_filter = request.args.get('page', '')
-        ip_filter = request.args.get('ip', '')
-        
-        # Base query excluding ignored IPs
-        query = """
-            SELECT v.VisitorID, v.IPAddress, v.PageVisited, v.VisitDateTime, v.UserAgent
+        cursor.execute("""
+            SELECT 
+                v.VisitDateTime,
+                v.IPAddress,
+                v.PageVisited,
+                l.City,
+                l.Region,
+                l.Country
             FROM SiteVisitors v
+            LEFT JOIN IPLocations l ON v.LocationID = l.LocationID
             LEFT JOIN IgnoredIPs i ON v.IPAddress = i.IPAddress
             WHERE i.IPAddress IS NULL
-        """
-        
-        params = []
-        
-        if date_filter:
-            query += " AND CONVERT(date, v.VisitDateTime) = ?"
-            params.append(date_filter)
-            
-        if page_filter:
-            query += " AND v.PageVisited LIKE ?"
-            params.append(f'%{page_filter}%')
-            
-        if ip_filter:
-            query += " AND v.IPAddress LIKE ?"
-            params.append(f'%{ip_filter}%')
-            
-        query += " ORDER BY v.VisitDateTime DESC"
-        
-        cursor.execute(query, params)
+            ORDER BY v.VisitDateTime DESC
+        """)
         
         visitors = []
         for row in cursor.fetchall():
@@ -704,7 +689,11 @@ def visitors():
                 'visit_datetime': row.VisitDateTime,
                 'ip_address': row.IPAddress,
                 'page_visited': row.PageVisited,
-                'user_agent': row.UserAgent
+                'location': {
+                    'city': row.City,
+                    'region': row.Region,
+                    'country': row.Country
+                } if row.Country else None
             })
         
         return render_template('visitors.html', visitors=visitors)
@@ -787,30 +776,37 @@ def add_to_ignore_list():
 @login_required
 def remove_from_ignore_list():
     try:
+        logger.debug('Remove from ignore list endpoint called')
         data = request.get_json()
-        ip_address = data.get('ip_address')
+        logger.debug(f'Received data: {data}')
         
-        logger.debug(f'Remove from ignore list request received for IP: {ip_address}')
-        logger.debug(f'Request data: {data}')
+        if not data or 'ip_address' not in data:
+            logger.error('No IP address provided in request')
+            return jsonify({'success': False, 'error': 'No IP address provided'})
+            
+        ip_address = data['ip_address']
+        logger.debug(f'Attempting to remove IP: {ip_address}')
         
         conn = pyodbc.connect(f'DRIVER={{SQL Server}};SERVER={app.config["DB_SERVER"]};DATABASE={app.config["DB_NAME"]};UID={app.config["DB_USER"]};PWD={app.config["DB_PASSWORD"]}')
         cursor = conn.cursor()
         
-        logger.debug('Executing DELETE query')
-        cursor.execute("""
-            DELETE FROM IgnoredIPs
-            WHERE IPAddress = ?
-        """, (ip_address,))
+        # First check if IP exists
+        cursor.execute("SELECT 1 FROM IgnoredIPs WHERE IPAddress = ?", (ip_address,))
+        if not cursor.fetchone():
+            logger.warning(f'IP {ip_address} not found in ignore list')
+            return jsonify({'success': False, 'error': 'IP not found in ignore list'})
         
-        affected_rows = cursor.rowcount
-        logger.debug(f'Rows affected by DELETE: {affected_rows}')
+        # Delete the IP
+        cursor.execute("DELETE FROM IgnoredIPs WHERE IPAddress = ?", (ip_address,))
+        affected = cursor.rowcount
+        logger.debug(f'Rows affected by delete: {affected}')
         
         conn.commit()
-        logger.debug(f'Successfully removed IP {ip_address} from ignore list')
-        return jsonify({'success': True, 'rows_affected': affected_rows})
+        logger.debug(f'Successfully removed IP {ip_address}')
+        return jsonify({'success': True, 'message': f'Removed IP: {ip_address}'})
         
     except Exception as e:
-        logger.error(f'Error removing from ignore list: {str(e)}')
+        logger.error(f'Error in remove_from_ignore_list: {str(e)}')
         logger.error(f'Full traceback: {traceback.format_exc()}')
         return jsonify({'success': False, 'error': str(e)})
         
@@ -818,7 +814,55 @@ def remove_from_ignore_list():
         if 'conn' in locals():
             conn.close()
 
-# Add visitor tracking to before_request
+def get_or_create_location(cursor, ip_address):
+    """Get existing location ID or create new one"""
+    try:
+        # First try to get existing location
+        cursor.execute("SELECT LocationID FROM IPLocations WHERE IPAddress = ?", (ip_address,))
+        existing = cursor.fetchone()
+        
+        if existing:
+            logger.debug(f'Found existing location for IP: {ip_address}')
+            return existing[0]
+            
+        # Skip lookup for local IPs
+        if ip_address.startswith(('192.168.', '10.', '127.')):
+            logger.debug('Skipping lookup for local IP')
+            return None
+            
+        # Look up new location
+        logger.debug(f'Looking up new location for IP: {ip_address}')
+        response = requests.get(f'http://ip-api.com/json/{ip_address}', timeout=5)
+        data = response.json()
+        
+        if data['status'] == 'success':
+            # Insert new location
+            cursor.execute("""
+                INSERT INTO IPLocations (
+                    IPAddress, Country, Region, City, 
+                    Latitude, Longitude, ISP
+                ) VALUES (?, ?, ?, ?, ?, ?, ?);
+                SELECT SCOPE_IDENTITY();
+                """, (
+                    ip_address,
+                    data.get('country', ''),
+                    data.get('regionName', ''),
+                    data.get('city', ''),
+                    data.get('lat', 0),
+                    data.get('lon', 0),
+                    data.get('isp', '')
+                ))
+            
+            new_id = cursor.fetchone()[0]
+            logger.debug(f'Created new location ID {new_id} for IP: {ip_address}')
+            return new_id
+            
+        return None
+        
+    except Exception as e:
+        logger.error(f'Error in get_or_create_location: {str(e)}')
+        return None
+
 @app.before_request
 def track_visitor():
     # Skip for static files and certain paths
@@ -827,7 +871,12 @@ def track_visitor():
         return
     
     try:
-        ip_address = request.remote_addr
+        # Get real IP address from headers
+        ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
+        if ',' in ip_address:  # In case of multiple IPs, take the first one
+            ip_address = ip_address.split(',')[0].strip()
+            
+        logger.debug(f'Tracking visitor with IP: {ip_address}')
         
         conn = pyodbc.connect(f'DRIVER={{SQL Server}};SERVER={app.config["DB_SERVER"]};DATABASE={app.config["DB_NAME"]};UID={app.config["DB_USER"]};PWD={app.config["DB_PASSWORD"]}')
         cursor = conn.cursor()
@@ -836,17 +885,37 @@ def track_visitor():
         cursor.execute("SELECT 1 FROM IgnoredIPs WHERE IPAddress = ?", (ip_address,))
         if cursor.fetchone():
             return
+            
+        # Get or create location in a single transaction
+        location_id = get_or_create_location(cursor, ip_address)
         
         # Record the visit
         cursor.execute("""
-            INSERT INTO SiteVisitors (IPAddress, PageVisited, UserAgent)
-            VALUES (?, ?, ?)
-        """, (ip_address, request.path, request.user_agent.string))
+            INSERT INTO SiteVisitors (
+                IPAddress, PageVisited, UserAgent, LocationID
+            ) VALUES (?, ?, ?, ?)
+        """, (
+            ip_address, 
+            request.path, 
+            request.user_agent.string,
+            location_id  # Will be NULL if location lookup failed or wasn't attempted
+        ))
         
         conn.commit()
         
     except Exception as e:
         logger.error(f'Error tracking visitor: {str(e)}')
+        # Try to record visit without location if there was an error
+        try:
+            if 'conn' in locals():
+                cursor.execute("""
+                    INSERT INTO SiteVisitors (
+                        IPAddress, PageVisited, UserAgent
+                    ) VALUES (?, ?, ?)
+                """, (ip_address, request.path, request.user_agent.string))
+                conn.commit()
+        except Exception as e2:
+            logger.error(f'Error in fallback visitor tracking: {str(e2)}')
         
     finally:
         if 'conn' in locals():
