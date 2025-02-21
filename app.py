@@ -674,9 +674,11 @@ def visitors():
                 v.VisitDateTime,
                 v.IPAddress,
                 v.Referrer,
+                l.LocationID,
                 l.City,
                 l.Region,
-                l.Country
+                l.Country,
+                l.Notes
             FROM SiteVisitors v
             LEFT JOIN IPLocations l ON v.LocationID = l.LocationID
             LEFT JOIN IgnoredIPs i ON v.IPAddress = i.IPAddress
@@ -691,10 +693,12 @@ def visitors():
                 'ip_address': row.IPAddress,
                 'referrer': row.Referrer,
                 'location': {
+                    'id': row.LocationID,
                     'city': row.City,
                     'region': row.Region,
-                    'country': row.Country
-                } if row.Country else None
+                    'country': row.Country,
+                    'notes': row.Notes
+                } if row.LocationID else None
             })
         
         return render_template('visitors.html', visitors=visitors)
@@ -943,6 +947,114 @@ def track_visitor():
     finally:
         if 'conn' in locals():
             conn.close()
+
+@app.route('/update_location_notes', methods=['POST'])
+@csrf.exempt
+def update_location_notes():
+    try:
+        data = request.get_json()
+        location_id = data.get('location_id')
+        notes = data.get('notes')
+        
+        logger.debug(f'Received request to update notes: location_id={location_id}, notes={notes}')
+        
+        if not location_id:
+            return jsonify({'success': False, 'error': 'Location ID is required'})
+            
+        conn = pyodbc.connect(f'DRIVER={{SQL Server}};SERVER={app.config["DB_SERVER"]};DATABASE={app.config["DB_NAME"]};UID={app.config["DB_USER"]};PWD={app.config["DB_PASSWORD"]}')
+        cursor = conn.cursor()
+        
+        # First do the UPDATE
+        update_sql = """
+            UPDATE IPLocations 
+            SET Notes = ?, 
+                LastUpdated = GETDATE()
+            WHERE LocationID = ?
+        """
+        
+        logger.debug(f'Executing UPDATE SQL: {update_sql} with params: notes="{notes}", location_id={location_id}')
+        cursor.execute(update_sql, (notes, location_id))
+        
+        # Then get the row count
+        cursor.execute('SELECT @@ROWCOUNT AS RowsAffected')
+        rows_affected = cursor.fetchone()[0]
+        
+        logger.debug(f'Update complete. Rows affected: {rows_affected}')
+        
+        conn.commit()
+        return jsonify({'success': True, 'rows_affected': rows_affected})
+        
+    except Exception as e:
+        logger.error(f'Error in update_location_notes: {str(e)}')
+        logger.error(f'Full traceback: {traceback.format_exc()}')
+        return jsonify({'success': False, 'error': str(e)})
+        
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.route('/ignore_ip', methods=['POST'])
+@csrf.exempt
+def ignore_ip():
+    try:
+        print("=== Starting ignore_ip request ===")
+        data = request.get_json()
+        print(f"Request data: {data}")
+        
+        ip_address = data.get('ip_address')
+        print(f"IP to ignore: {ip_address}")
+        
+        if not ip_address:
+            print("Error: No IP address provided")
+            return jsonify({'success': False, 'error': 'IP address is required'})
+            
+        print(f"Connecting to database: {app.config['DB_SERVER']}")
+        conn = pyodbc.connect(f'DRIVER={{SQL Server}};SERVER={app.config["DB_SERVER"]};DATABASE={app.config["DB_NAME"]};UID={app.config["DB_USER"]};PWD={app.config["DB_PASSWORD"]}')
+        cursor = conn.cursor()
+        
+        print("Checking if IP already ignored...")
+        cursor.execute("SELECT COUNT(*) FROM IgnoredIPs WHERE IPAddress = ?", (ip_address,))
+        count = cursor.fetchone()[0]
+        print(f"Found {count} existing entries")
+        
+        if count == 0:
+            print("Inserting new ignore record...")
+            insert_sql = """
+                INSERT INTO IgnoredIPs (IPAddress, DateAdded, Notes) 
+                VALUES (?, GETDATE(), 'Added via visitors page')
+            """
+            print(f"SQL: {insert_sql}")
+            print(f"Parameters: {ip_address}")
+            
+            cursor.execute(insert_sql, (ip_address,))
+            rows = cursor.rowcount
+            print(f"Rows affected: {rows}")
+            
+            conn.commit()
+            print("Transaction committed")
+            
+            return jsonify({
+                'success': True,
+                'message': f'IP {ip_address} added to ignore list',
+                'rows_affected': rows
+            })
+        else:
+            print("IP already ignored")
+            return jsonify({
+                'success': True,
+                'message': f'IP {ip_address} was already ignored'
+            })
+            
+    except Exception as e:
+        print(f"ERROR: {str(e)}")
+        print(f"Full traceback: {traceback.format_exc()}")
+        return jsonify({'success': False, 'error': str(e)})
+        
+    finally:
+        if 'conn' in locals():
+            conn.close()
+            print("Database connection closed")
+        print("=== End ignore_ip request ===")
 
 if __name__ == '__main__':
     # Log the configuration at startup

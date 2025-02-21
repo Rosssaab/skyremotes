@@ -31,6 +31,7 @@
                     <th>IP Address</th>
                     <th>Location</th>
                     <th>Referrer</th>
+                    <th>Notes</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -50,6 +51,16 @@
                     </td>
                     <td>{{ visitor.referrer or 'Direct' }}</td>
                     <td>
+                        {{ visitor.location.notes or '' }}
+                        <button class="btn btn-sm btn-info edit-notes" 
+                                data-ip="{{ visitor.ip_address }}"
+                                data-notes="{{ visitor.location.notes or '' }}"
+                                data-location-id="{{ visitor.location.id }}"
+                                onclick="openNotesModal(this)">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </td>
+                    <td>
                         <button class="btn btn-sm btn-danger remove-ip" 
                                 data-ip="{{ visitor.ip_address }}">
                             Ignore IP
@@ -62,9 +73,33 @@
     </div>
 </div>
 
+<!-- Notes Edit Modal -->
+<div class="modal fade" id="notesModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Location Notes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="locationId">
+                <div class="mb-3">
+                    <label for="locationNotes" class="form-label">Notes</label>
+                    <textarea class="form-control" id="locationNotes" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="saveNotes()">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
+{{ super() }}
 <script>
 function addToIgnoreList(ip) {
     console.log('Adding IP to ignore list:', ip);
@@ -117,6 +152,92 @@ document.addEventListener('DOMContentLoaded', function() {
 
     dateFilter.addEventListener('input', filterTable);
     ipFilter.addEventListener('input', filterTable);
+});
+
+function openNotesModal(button) {
+    const locationId = button.dataset.locationId;
+    const notes = button.dataset.notes;
+    
+    document.getElementById('locationId').value = locationId;
+    document.getElementById('locationNotes').value = notes;
+    
+    const modal = new bootstrap.Modal(document.getElementById('notesModal'));
+    modal.show();
+}
+
+function saveNotes() {
+    const locationId = document.getElementById('locationId').value;
+    const notes = document.getElementById('locationNotes').value;
+    
+    fetch('/update_location_notes', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            location_id: locationId,
+            notes: notes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error saving notes: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving notes');
+    });
+}
+
+document.querySelectorAll('.remove-ip').forEach(button => {
+    button.addEventListener('click', function() {
+        const ip = this.dataset.ip;
+        console.log('Ignore IP clicked for:', ip);
+        
+        if (!confirm(`Are you sure you want to ignore IP ${ip}?`)) {
+            console.log('Ignore IP cancelled by user');
+            return;
+        }
+        
+        console.log('Sending ignore request for IP:', ip);
+        fetch('/ignore_ip', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                ip_address: ip
+            })
+        })
+        .then(response => {
+            console.log('Raw response:', response);
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            return response.text().then(text => {
+                console.log('Response text:', text);
+                return text ? JSON.parse(text) : {};
+            });
+        })
+        .then(data => {
+            console.log('Parsed response data:', data);
+            if (data.success) {
+                console.log('Successfully ignored IP:', ip);
+                location.reload();
+            } else {
+                console.error('Server error:', data.error);
+                alert('Error ignoring IP: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            console.error('Full error object:', error);
+            alert('Error ignoring IP: ' + error);
+        });
+    });
 });
 </script>
 {% endblock %} 
