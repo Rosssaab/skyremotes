@@ -16,6 +16,7 @@ from utils.order_processor import process_new_order
 from functools import wraps
 from werkzeug.security import check_password_hash, generate_password_hash
 import requests
+from urllib.parse import urlparse
 
 # Set up logging with more detail
 logging.basicConfig(
@@ -672,7 +673,7 @@ def visitors():
             SELECT 
                 v.VisitDateTime,
                 v.IPAddress,
-                v.PageVisited,
+                v.Referrer,
                 l.City,
                 l.Region,
                 l.Country
@@ -688,7 +689,7 @@ def visitors():
             visitors.append({
                 'visit_datetime': row.VisitDateTime,
                 'ip_address': row.IPAddress,
-                'page_visited': row.PageVisited,
+                'referrer': row.Referrer,
                 'location': {
                     'city': row.City,
                     'region': row.Region,
@@ -865,18 +866,27 @@ def get_or_create_location(cursor, ip_address):
 
 @app.before_request
 def track_visitor():
-    # Skip for static files and certain paths
     if request.path.startswith('/static') or \
        request.path in ['/favicon.ico', '/robots.txt', '/sitemap.xml']:
         return
     
     try:
-        # Get real IP address from headers
+        # Get real IP address and referrer
         ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
-        if ',' in ip_address:  # In case of multiple IPs, take the first one
+        if ',' in ip_address:
             ip_address = ip_address.split(',')[0].strip()
-            
-        logger.debug(f'Tracking visitor with IP: {ip_address}')
+        
+        # Get and parse referrer
+        referrer = None
+        if request.referrer:
+            try:
+                from urllib.parse import urlparse
+                parsed = urlparse(request.referrer)
+                referrer = parsed.netloc
+                logger.debug(f'Parsed referrer domain: {referrer} from {request.referrer}')
+            except Exception as e:
+                logger.error(f'Failed to parse referrer {request.referrer}: {str(e)}')
+                referrer = None
         
         conn = pyodbc.connect(f'DRIVER={{SQL Server}};SERVER={app.config["DB_SERVER"]};DATABASE={app.config["DB_NAME"]};UID={app.config["DB_USER"]};PWD={app.config["DB_PASSWORD"]}')
         cursor = conn.cursor()
@@ -886,36 +896,49 @@ def track_visitor():
         if cursor.fetchone():
             return
             
-        # Get or create location in a single transaction
-        location_id = get_or_create_location(cursor, ip_address)
-        
-        # Record the visit
+        # Check for existing session (within last 5 minutes)
         cursor.execute("""
-            INSERT INTO SiteVisitors (
-                IPAddress, PageVisited, UserAgent, LocationID
-            ) VALUES (?, ?, ?, ?)
-        """, (
-            ip_address, 
-            request.path, 
-            request.user_agent.string,
-            location_id  # Will be NULL if location lookup failed or wasn't attempted
-        ))
+            SELECT TOP 1 VisitDateTime 
+            FROM SiteVisitors 
+            WHERE IPAddress = ? 
+                AND DATEDIFF(MINUTE, VisitDateTime, GETDATE()) <= 5
+            ORDER BY VisitDateTime DESC
+        """, (ip_address,))
         
-        conn.commit()
+        last_visit = cursor.fetchone()
         
-    except Exception as e:
-        logger.error(f'Error tracking visitor: {str(e)}')
-        # Try to record visit without location if there was an error
-        try:
-            if 'conn' in locals():
+        if last_visit:
+            logger.debug(f'Found recent visit (within 5 mins) for {ip_address} at {last_visit[0]}')
+        else:
+            logger.debug(f'New visit from {ip_address}, referrer: {referrer}')
+            # Get or create location
+            location_id = get_or_create_location(cursor, ip_address)
+            
+            try:
+                # Record the new session with referrer
                 cursor.execute("""
                     INSERT INTO SiteVisitors (
-                        IPAddress, PageVisited, UserAgent
-                    ) VALUES (?, ?, ?)
-                """, (ip_address, request.path, request.user_agent.string))
+                        IPAddress, PageVisited, UserAgent, LocationID, VisitDateTime, Referrer
+                    ) VALUES (?, ?, ?, ?, GETDATE(), ?)
+                """, (
+                    ip_address, 
+                    request.path, 
+                    request.user_agent.string,
+                    location_id,
+                    referrer  # Will be NULL if no referrer
+                ))
+                
                 conn.commit()
-        except Exception as e2:
-            logger.error(f'Error in fallback visitor tracking: {str(e2)}')
+                logger.debug(f'Successfully recorded visit from {ip_address} with referrer: {referrer}')
+                
+            except Exception as e:
+                logger.error(f'Failed to insert visitor record: {str(e)}')
+                logger.error(f'Values: IP={ip_address}, Path={request.path}, LocationID={location_id}, Referrer={referrer}')
+                conn.rollback()
+            
+    except Exception as e:
+        logger.error(f'Error in track_visitor: {str(e)}')
+        logger.error(f'Full traceback: {traceback.format_exc()}')
         
     finally:
         if 'conn' in locals():
